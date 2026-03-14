@@ -234,7 +234,6 @@ public class EGLContext implements JAWTGLContext {
                 throw new AWTException("EGL: Failed to find a suitable EGLConfig");
             }
         }
-        System.out.println(result.handle);
         return result;
     }
     
@@ -467,6 +466,8 @@ public class EGLContext implements JAWTGLContext {
             throw new IllegalStateException("EGL: Failed to create window surface: %s"
                         .formatted(getEGLErrorString(eglGetError())));
         }
+        
+        memFree(attribs);
     }
 
     @Override
