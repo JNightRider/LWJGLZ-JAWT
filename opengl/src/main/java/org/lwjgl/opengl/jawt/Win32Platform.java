@@ -83,12 +83,12 @@ public class Win32Platform<T extends Component> implements JAWTGLPlatform<T> {
     }
 
     @Override
-    public long getDisplay() {
+    public long getNativeDisplay() {
         return getHWND();
     }
-    
+
     @Override
-    public long getSurface() {
+    public long getNativeWindow() {
         return getHDC();
     }
     

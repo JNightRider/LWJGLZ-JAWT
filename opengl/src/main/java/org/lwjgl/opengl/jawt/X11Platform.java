@@ -91,8 +91,17 @@ public class X11Platform<T extends Component> implements JAWTGLPlatform<T> {
     public int getScreen() {
         return XDefaultScreen(getDisplay());
     }
-    
+
     @Override
+    public long getNativeDisplay() {
+        return getDisplay();
+    }
+
+    @Override
+    public long getNativeWindow() {
+        return getDrawable();
+    }
+    
     public long getDisplay() {
         check_AWT_GetDrawingSurface();
         // Get the drawing surface info
@@ -110,8 +119,7 @@ public class X11Platform<T extends Component> implements JAWTGLPlatform<T> {
         }
     }
     
-    @Override
-    public long getSurface() {
+    public long getDrawable() {
         check_AWT_GetDrawingSurface();
         // Get the drawing surface info
         JAWTDrawingSurfaceInfo dsi = JAWT_DrawingSurface_GetDrawingSurfaceInfo(ds, ds.GetDrawingSurfaceInfo());

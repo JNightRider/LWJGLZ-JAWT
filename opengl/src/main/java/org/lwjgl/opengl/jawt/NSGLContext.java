@@ -5,12 +5,33 @@
 package org.lwjgl.opengl.jawt;
 
 import java.awt.AWTException;
+import static org.lwjgl.opengl.CGL.*;
+import org.lwjgl.opengl.GL;
+import static org.lwjgl.system.APIUtil.apiGetFunctionAddress;
+
+import static org.lwjgl.system.MemoryUtil.*;
+import static org.lwjgl.system.macosx.CoreFoundation.*;
 
 /**
  *
  * @author wil
  */
 public class NSGLContext implements JAWTGLContext {
+    
+    public static final class Functions {
+        
+        private Functions() {}
+        
+        /** Function address. */
+        public static final long
+                framework          = CFBundleGetBundleWithIdentifier(CFSTR("com.apple.opengl"));
+        
+        public static long CFSTR(String value) {            
+            return CFStringCreateWithCString(NULL, memASCII(value), kCFStringEncodingUTF8);
+        }
+    }
+    
+    private long context;
 
     public NSGLContext(CocoaPlatform platform) {
     }
@@ -29,7 +50,7 @@ public class NSGLContext implements JAWTGLContext {
 
     @Override
     public long getCurrentContext() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return CGLGetCurrentContext();
     }
 
     @Override
@@ -44,22 +65,29 @@ public class NSGLContext implements JAWTGLContext {
 
     @Override
     public boolean extensionSupported(String extension) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        // There are no NSGL extensions
+        return false;
     }
 
     @Override
     public long getProcAddress(String procname) {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        long symbolName = CFStringCreateWithCString(kCFAllocatorDefault, 
+                memASCII(procname), 
+                kCFStringEncodingASCII);
+
+        long symbol = CFBundleGetFunctionPointerForName(Functions.framework, symbolName);
+        
+        CFRelease(symbolName);
+        return symbol;
     }
 
     @Override
     public long getHandle() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
+        return context;
     }
 
     @Override
     public void destroy() {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
-    
 }

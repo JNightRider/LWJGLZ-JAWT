@@ -403,7 +403,7 @@ public class GLXContext implements JAWTGLContext {
     @Override
     public void makeContextCurrent(boolean handle) {
         if (handle) {
-            if (!glXMakeCurrent(platform.getDisplay(), platform.getSurface(), context))
+            if (!glXMakeCurrent(platform.getDisplay(), platform.getDrawable(), context))
             {
                 throw new IllegalStateException("GLX: Failed to make context current");
             }
@@ -421,7 +421,7 @@ public class GLXContext implements JAWTGLContext {
 
     @Override
     public void swapBuffers() {
-        glXSwapBuffers(platform.getDisplay(), platform.getSurface());
+        glXSwapBuffers(platform.getDisplay(), platform.getDrawable());
     }
 
     @Override

@@ -26,9 +26,9 @@ public interface JAWTGLPlatform<HANDLE extends Component> {
  
     HANDLE getComponent();
     
-    long getDisplay();
+    long getNativeDisplay();
     
-    long getSurface();
+    long getNativeWindow();
     
     void dispose();
 }

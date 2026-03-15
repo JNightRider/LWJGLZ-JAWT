@@ -678,6 +678,9 @@ public class WGLContext implements JAWTGLContext {
             wglDeleteContext(null, context);
             context = NULL;
         }
+        if (dc != NULL) {
+            ReleaseDC(platform.getHWND(), dc);
+        }
         glTerminateWin32();
     }
 }

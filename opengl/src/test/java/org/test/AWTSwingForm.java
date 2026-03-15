@@ -51,8 +51,6 @@ public class AWTSwingForm extends JFrame {
                 glVertex2f(0, +0.75f);
                 glEnd();
 
-                System.out.println("Hola");
-
                 swapBuffers();
             }
         };
@@ -124,7 +122,7 @@ public class AWTSwingForm extends JFrame {
 
 
     public static void main(String args[]) {
-        Configuration.OPENGL_CONTEXT_API.set("native");
+        //Configuration.OPENGL_CONTEXT_API.set("native");
 
         try {
             for (UIManager.LookAndFeelInfo info : UIManager.getInstalledLookAndFeels()) {

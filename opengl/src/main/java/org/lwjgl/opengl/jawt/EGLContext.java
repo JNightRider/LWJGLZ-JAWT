@@ -280,7 +280,7 @@ public class EGLContext implements JAWTGLContext {
         GLPlatformConfig ctxconfig = platform.getPlatformConfig();
         ctxconfig.platform = getEGLPlatformWayland();
         
-        display = eglGetDisplay(platform.getDisplay());        
+        display = eglGetDisplay(platform.getNativeDisplay());
         if (display == EGL_NO_DISPLAY) {
             glTerminateEGL();
             throw new IllegalStateException("EGL: Failed to get EGL display: %ss"
@@ -455,7 +455,7 @@ public class EGLContext implements JAWTGLContext {
         attribs.put(EGL_NONE);
         attribs.flip();
         
-        long _native = platform.getSurface();
+        long _native = platform.getNativeWindow();
         // HACK: Use a non-platform function for all, as 
         //       eglCreatePlatformWindowSurfaceEXT does not work with AWT 
         //       despite stating that it supports EGL_EXT_platform_base.
