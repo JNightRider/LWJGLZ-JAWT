@@ -16,6 +16,6 @@ public class Int {
         if (value == null) {
             return false;
         }
-        return value > 0;
+        return value != 0;
     }
 }
