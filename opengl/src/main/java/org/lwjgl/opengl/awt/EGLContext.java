@@ -2,7 +2,7 @@
  * Copyright LWJGLZ. All rights reserved.
  * License terms: https://opensource.org/license/BSD-3-clause
  */
-package org.lwjgl.opengl.jawt;
+package org.lwjgl.opengl.awt;
 
 import java.awt.AWTException;
 
@@ -18,27 +18,26 @@ import org.lwjgl.system.*;
 import static org.lwjgl.egl.EGL10.*;
 import static org.lwjgl.egl.EGL11.*;
 import static org.lwjgl.egl.EGL14.*;
-import static org.lwjgl.egl.EXTPlatformWayland.*;
 import static org.lwjgl.egl.EXTPresentOpaque.*;
 import static org.lwjgl.egl.KHRContextFlushControl.*;
 import static org.lwjgl.egl.KHRCreateContext.*;
 import static org.lwjgl.egl.KHRCreateContextNoError.*;
 import static org.lwjgl.egl.KHRGLColorspace.*;
 
-import static org.lwjgl.opengl.jawt.GLPlatformConfig.*;
-import static org.lwjgl.opengl.jawt.GLUtils.*;
+import static org.lwjgl.opengl.awt.GLPlatformConfig.*;
+import static org.lwjgl.opengl.awt.AWTGL.*;
 
 import static org.lwjgl.system.APIUtil.*;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 
-import static org.lwjgl.awt.Int.*;
+import static org.lwjgl.awt.AWT.*;
 
 /**
  *
  * @author wil
  */
-public class EGLContext implements JAWTGLContext {
+public class EGLContext implements GLContext {
     
     public static class Extensions {
         
@@ -63,7 +62,7 @@ public class EGLContext implements JAWTGLContext {
                 EXT_present_opaque              = Boolean.FALSE;
     }
     
-    private final JAWTGLPlatform platform;
+    private final GLPlatform platform;
     private final Extensions egl;
     
     private long context;
@@ -71,7 +70,7 @@ public class EGLContext implements JAWTGLContext {
     private long display;
     private long surface;
 
-    public EGLContext(JAWTGLPlatform platform) {
+    public EGLContext(GLPlatform platform) {
         this.platform = platform;
         this.egl = new Extensions();
     }
@@ -172,10 +171,10 @@ public class EGLContext implements JAWTGLContext {
             if (getEGLConfigAttrib(config, EGL_COLOR_BUFFER_TYPE) != EGL_RGB_BUFFER)
                 continue;
 
-            if (!toBoolean((getEGLConfigAttrib(config, EGL_SURFACE_TYPE) & surfaceTypeBit)))
+            if (!BOOL((getEGLConfigAttrib(config, EGL_SURFACE_TYPE) & surfaceTypeBit)))
                 continue;
             
-            if (!toBoolean((getEGLConfigAttrib(config, EGL_RENDERABLE_TYPE) & apiBit)))
+            if (!BOOL((getEGLConfigAttrib(config, EGL_RENDERABLE_TYPE) & apiBit)))
             {
                 wrongApiAvailable = true;
                 continue;
@@ -237,13 +236,6 @@ public class EGLContext implements JAWTGLContext {
         return result;
     }
     
-    private int getEGLPlatformWayland() {
-        if (egl.EXT_platform_base && egl.EXT_platform_wayland)
-            return EGL_PLATFORM_WAYLAND_EXT;
-        else
-            return 0;
-    }
-    
     private void glTerminateEGL() {
         if (display != NULL) {
             eglTerminate(display);
@@ -276,9 +268,6 @@ public class EGLContext implements JAWTGLContext {
             egl.MESA_platform_surfaceless =
                 glStringInExtensionString("EGL_MESA_platform_surfaceless", extensions);
         }
-        
-        GLPlatformConfig ctxconfig = platform.getPlatformConfig();
-        ctxconfig.platform = getEGLPlatformWayland();
         
         display = eglGetDisplay(platform.getNativeDisplay());
         if (display == EGL_NO_DISPLAY) {
@@ -368,7 +357,7 @@ public class EGLContext implements JAWTGLContext {
             if (ctxconfig.debug)
                 flags |= EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR;
 
-            if (toBoolean(ctxconfig.robustness))
+            if (BOOL(ctxconfig.robustness))
             {
                 if (ctxconfig.robustness == JAWT_NO_RESET_NOTIFICATION)
                 {
@@ -396,10 +385,10 @@ public class EGLContext implements JAWTGLContext {
                     attribs.put(EGL_CONTEXT_OPENGL_NO_ERROR_KHR).put(EGL_TRUE);
             }
 
-            if (toBoolean(mask))
+            if (BOOL(mask))
                  attribs.put(EGL_CONTEXT_OPENGL_PROFILE_MASK_KHR).put(mask);
 
-            if (toBoolean(flags))
+            if (BOOL(flags))
                  attribs.put(EGL_CONTEXT_FLAGS_KHR).put(flags);
         }
         else

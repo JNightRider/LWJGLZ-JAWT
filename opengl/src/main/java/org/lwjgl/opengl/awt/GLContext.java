@@ -2,7 +2,7 @@
  * Copyright LWJGLZ. All rights reserved.
  * License terms: https://opensource.org/license/BSD-3-clause
  */
-package org.lwjgl.opengl.jawt;
+package org.lwjgl.opengl.awt;
 
 import java.awt.AWTException;
 
@@ -12,7 +12,7 @@ import java.awt.AWTException;
  * @version 1.0.0
  * @since 1.0.0
  */
-public interface JAWTGLContext {
+public interface GLContext {
     
     void createContext() throws AWTException;
     

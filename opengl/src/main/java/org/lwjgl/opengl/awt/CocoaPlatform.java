@@ -2,7 +2,7 @@
  * Copyright LWJGLZ. All rights reserved.
  * License terms: https://opensource.org/license/BSD-3-clause
  */
-package org.lwjgl.opengl.jawt;
+package org.lwjgl.opengl.awt;
 
 import java.awt.AWTException;
 import java.awt.Component;
@@ -11,7 +11,7 @@ import java.awt.Component;
  *
  * @author wil
  */
-public class CocoaPlatform<T extends Component> implements JAWTGLPlatform<T> {
+public class CocoaPlatform<T extends Component> implements GLPlatform<T> {
 
     @Override
     public void create(T handle) throws AWTException {

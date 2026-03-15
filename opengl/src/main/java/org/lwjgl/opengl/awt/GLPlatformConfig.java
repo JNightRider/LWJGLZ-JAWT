@@ -2,7 +2,7 @@
  * Copyright LWJGLZ. All rights reserved.
  * License terms: https://opensource.org/license/BSD-3-clause
  */
-package org.lwjgl.opengl.jawt;
+package org.lwjgl.opengl.awt;
 
 /**
  *
@@ -40,6 +40,4 @@ public class GLPlatformConfig {
     public int      robustness;
     public int      release;
     public long     share;
-    
-    public int      platform;
 }

@@ -2,7 +2,7 @@
  * Copyright LWJGLZ. All rights reserved.
  * License terms: https://opensource.org/license/BSD-3-clause
  */
-package org.lwjgl.opengl.jawt;
+package org.lwjgl.opengl.awt;
 
 import java.awt.AWTException;
 import java.awt.Canvas;
@@ -11,25 +11,21 @@ import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
 import java.awt.geom.AffineTransform;
+
 import java.util.concurrent.atomic.AtomicBoolean;
-import static org.lwjgl.opengl.jawt.GLUtils.*;
+
+import static org.lwjgl.opengl.awt.AWTGL.*;
 
 /**
  *
  * @author wil
  */
-public class JAWTGLCanvas extends Canvas {
+public class AWTGLCanvas extends Canvas {
     
-    private JAWTGLPlatform<Canvas> platform;
-    private JAWTGLContext context;
+    private GLPlatform<Canvas> platform;
+    private GLContext context;
     
     private final Object SYNC_LOCK = new Object();
-    
-    /**
-     * re-entry counter for support for re-entrant redrawing in paint(). It
-     * happens when using dialog boxes.
-     */
-    private int reentryCount;
 
     /**
      * Tracks whether initGL() needs to be called
@@ -42,15 +38,15 @@ public class JAWTGLCanvas extends Canvas {
     private final ComponentListener listener = new ComponentAdapter() {
         @Override
         public void componentResized(ComponentEvent e) {
-            AffineTransform t = JAWTGLCanvas.this.getGraphicsConfiguration().getDefaultTransform();
+            AffineTransform t = AWTGLCanvas.this.getGraphicsConfiguration().getDefaultTransform();
             float sx = (float) t.getScaleX(), sy = (float) t.getScaleY();
-            JAWTGLCanvas.this.framebufferWidth = (int) (getWidth() * sx);
-            JAWTGLCanvas.this.framebufferHeight = (int) (getHeight() * sy);
+            AWTGLCanvas.this.framebufferWidth = (int) (getWidth() * sx);
+            AWTGLCanvas.this.framebufferHeight = (int) (getHeight() * sy);
         }
     };
     
-    public JAWTGLCanvas() {
-        JAWTGLCanvas.this.addComponentListener(listener);
+    public AWTGLCanvas() {
+        AWTGLCanvas.this.addComponentListener(listener);
     }
 
     public void platformHint(int name, int value) {
@@ -158,7 +154,6 @@ public class JAWTGLCanvas extends Canvas {
                 platform = null;
                 createdPlatform.set(false);
             }
-            reentryCount = 0;
         }
     }
     
@@ -187,14 +182,14 @@ public class JAWTGLCanvas extends Canvas {
             try {
                 if (!createdPlatform.get()) {
                     createdPlatform.set(true);  
-                    platform = glGetNewJAWTGLPlatform();
+                    platform = glGetAttachAWTWindow();
                     platform.create(this);
                 }
                 platform.lock();
                 try {
                     if (!createdContext.get()) {
                         createdContext.set(true);
-                        context = glGetNewJAWTGLContext(platform);
+                        context = glNewAttachAWTContext(platform);
                         context.createContext();
                     }
                     
@@ -236,11 +231,11 @@ public class JAWTGLCanvas extends Canvas {
         return framebufferHeight;
     }
 
-    public JAWTGLPlatform<Canvas> getPlatform() {
+    public GLPlatform<Canvas> getPlatform() {
         return platform;
     }
 
-    public JAWTGLContext getContext() {
+    public GLContext getContext() {
         return context;
     }
 }

@@ -3,15 +3,14 @@ package org.test;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
 
-import java.awt.BorderLayout;
-import java.awt.EventQueue;
+import java.awt.*;
 import java.util.logging.Level;
 import java.util.logging.Logger;
 import javax.swing.JFrame;
 import javax.swing.JOptionPane;
 import javax.swing.UIManager;
 
-import org.lwjgl.opengl.jawt.JAWTGLCanvas;
+import org.lwjgl.opengl.awt.AWTGLCanvas;
 import static org.lwjgl.opengl.GL11.*;
 
 /**
@@ -19,7 +18,7 @@ import static org.lwjgl.opengl.GL11.*;
  */
 public class AWTSwingForm extends JFrame {
 
-    private JAWTGLCanvas canvas;
+    private AWTGLCanvas canvas;
 
     public AWTSwingForm() {
         initComponents();
@@ -27,7 +26,7 @@ public class AWTSwingForm extends JFrame {
     }
 
     private void componentesAdd() {
-        canvas = new JAWTGLCanvas(){
+        canvas = new AWTGLCanvas(){
             @Override
             protected void initGL() {
                 GL.createCapabilities();

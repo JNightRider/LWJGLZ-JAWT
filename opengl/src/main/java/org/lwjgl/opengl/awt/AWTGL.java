@@ -2,32 +2,21 @@
  * Copyright LWJGLZ. All rights reserved.
  * License terms: https://opensource.org/license/BSD-3-clause
  */
-package org.lwjgl.opengl.jawt;
+package org.lwjgl.opengl.awt;
 
 import java.awt.Component;
 import java.util.List;
-import static org.lwjgl.awt.Int.*;
+
 import org.lwjgl.system.Platform;
+import static org.lwjgl.awt.AWT.*;
 
 /**
  *
  * @author wil
  */
-public final class GLUtils {
+public final class AWTGL {
     
-    public static boolean isWayland() {
-        switch (Platform.get()) {
-            case FREEBSD, LINUX -> {
-                // The following matches the test GLFW does to enable the Wayland backend.
-                if ("wayland".equals(System.getenv("XDG_SESSION_TYPE")) && System.getenv("WAYLAND_DISPLAY") != null) {
-                    return true;
-                }
-            }
-        }
-        return false;
-    }
-    
-    public static <T extends Component> JAWTGLPlatform<T> glGetNewJAWTGLPlatform() {
+    public static <T extends Component> GLPlatform<T> glGetAttachAWTWindow() {
         switch (Platform.get()) {
             case FREEBSD, LINUX -> {
                 return new X11Platform<>();
@@ -43,13 +32,13 @@ public final class GLUtils {
         }
     }
     
-    public static <T extends Component, E extends JAWTGLPlatform<T>> JAWTGLContext glGetNewJAWTGLContext(E platform) {
+    public static <T extends Component, E extends GLPlatform<T>> GLContext glNewAttachAWTContext(E platform) {
         switch (Platform.get()) {
             case FREEBSD, LINUX -> {
                 if (isWayland()) {
                     return new EGLContext(platform);
                 }
-                return new GLXContext((X11Platform) platform);
+                return new GLX_Context((X11Platform) platform);
             }
             case WINDOWS -> {
                 return new WGLContext((Win32Platform) platform);

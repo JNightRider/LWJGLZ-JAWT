@@ -2,7 +2,7 @@
  * Copyright LWJGLZ. All rights reserved.
  * License terms: https://opensource.org/license/BSD-3-clause
  */
-package org.lwjgl.opengl.jawt;
+package org.lwjgl.opengl.awt;
 
 import java.awt.AWTException;
 
@@ -13,6 +13,8 @@ import java.util.List;
 import org.lwjgl.*;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
+
+import static org.lwjgl.awt.AWT.*;
 
 import static org.lwjgl.opengl.GLX.*;
 import static org.lwjgl.opengl.GLX14.*;
@@ -26,9 +28,8 @@ import static org.lwjgl.opengl.GLXARBGetProcAddress.*;
 import static org.lwjgl.opengl.GLXEXTCreateContextES2Profile.*;
 import static org.lwjgl.opengl.GLXEXTSwapControl.*;
 import static org.lwjgl.opengl.GLXSGISwapControl.*;
-import static org.lwjgl.opengl.jawt.GLPlatformConfig.*;
-import static org.lwjgl.opengl.jawt.GLUtils.*;
-import static org.lwjgl.awt.Int.*;
+import static org.lwjgl.opengl.awt.GLPlatformConfig.*;
+import static org.lwjgl.opengl.awt.AWTGL.*;
 
 import static org.lwjgl.system.APIUtil.*;
 import static org.lwjgl.system.JNI.*;
@@ -40,7 +41,7 @@ import static org.lwjgl.system.linux.X11.*;
  *
  * @author wil
  */
-public class GLXContext implements JAWTGLContext {
+public class GLX_Context implements GLContext {
     
     /** Contains the function pointers loaded from {@code GL.getFunctionProvider()}. */
     public static final class Functions {
@@ -80,7 +81,7 @@ public class GLXContext implements JAWTGLContext {
     private final Extensions glx;
     private long context;
     
-    public GLXContext(X11Platform platform) {
+    public GLX_Context(X11Platform platform) {
         this.platform   = platform;
         this.glx        = new Extensions();
     }
@@ -280,7 +281,7 @@ public class GLXContext implements JAWTGLContext {
                 throw new AWTException("GLX: Forward compatibility requested but GLX_ARB_create_context_profile is unavailable");
             }
         }        
-        if (toBoolean(ctxconfig.profile))
+        if (BOOL(ctxconfig.profile))
         {
             if (!glx.ARB_create_context ||
                 !glx.ARB_create_context_profile)
@@ -309,7 +310,7 @@ public class GLXContext implements JAWTGLContext {
             if (ctxconfig.debug)
                 flags |= GLX_CONTEXT_DEBUG_BIT_ARB;
             
-            if (toBoolean(ctxconfig.robustness))
+            if (BOOL(ctxconfig.robustness))
             {
                 if (glx.ARB_create_context_robustness)
                 {
@@ -328,7 +329,7 @@ public class GLXContext implements JAWTGLContext {
                 }
             }
             
-            if (toBoolean(ctxconfig.release))
+            if (BOOL(ctxconfig.release))
             {
                 if (glx.ARB_context_flush_control)
                 {
@@ -360,10 +361,10 @@ public class GLXContext implements JAWTGLContext {
                 attribs.put(GLX_CONTEXT_MINOR_VERSION_ARB).put(ctxconfig.minor);
             }
             
-            if (toBoolean(mask))
+            if (BOOL(mask))
                 attribs.put(GLX_CONTEXT_PROFILE_MASK_ARB).put(mask);
 
-            if (toBoolean(flags))
+            if (BOOL(flags))
                 attribs.put(GLX_CONTEXT_FLAGS_ARB).put(flags);
             
             attribs.put(None).put(None);

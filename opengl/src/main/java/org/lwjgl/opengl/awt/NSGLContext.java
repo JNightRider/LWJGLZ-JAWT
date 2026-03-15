@@ -2,7 +2,7 @@
  * Copyright LWJGLZ. All rights reserved.
  * License terms: https://opensource.org/license/BSD-3-clause
  */
-package org.lwjgl.opengl.jawt;
+package org.lwjgl.opengl.awt;
 
 import java.awt.AWTException;
 import static org.lwjgl.opengl.CGL.*;
@@ -16,7 +16,7 @@ import static org.lwjgl.system.macosx.CoreFoundation.*;
  *
  * @author wil
  */
-public class NSGLContext implements JAWTGLContext {
+public class NSGLContext implements GLContext {
     
     public static final class Functions {
         

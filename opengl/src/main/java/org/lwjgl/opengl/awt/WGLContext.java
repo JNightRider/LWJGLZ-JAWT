@@ -2,7 +2,7 @@
  * Copyright LWJGLZ. All rights reserved.
  * License terms: https://opensource.org/license/BSD-3-clause
  */
-package org.lwjgl.opengl.jawt;
+package org.lwjgl.opengl.awt;
 
 import java.awt.AWTException;
 
@@ -12,10 +12,10 @@ import java.util.List;
 
 import org.lwjgl.BufferUtils;
 import org.lwjgl.opengl.*;
-import org.lwjgl.system.MemoryStack;
+import org.lwjgl.system.*;
 import org.lwjgl.system.windows.*;
 
-import static org.lwjgl.awt.Int.*;
+import static org.lwjgl.awt.AWT.*;
 
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.WGL.*;
@@ -33,8 +33,8 @@ import static org.lwjgl.opengl.WGLEXTColorspace.*;
 import static org.lwjgl.opengl.WGLEXTCreateContextES2Profile.*;
 import static org.lwjgl.opengl.WGLEXTExtensionsString.*;
 import static org.lwjgl.opengl.WGLEXTSwapControl.*;
-import static org.lwjgl.opengl.jawt.GLPlatformConfig.*;
-import static org.lwjgl.opengl.jawt.GLUtils.*;
+import static org.lwjgl.opengl.awt.GLPlatformConfig.*;
+import static org.lwjgl.opengl.awt.AWTGL.*;
 
 import static org.lwjgl.system.APIUtil.*;
 import static org.lwjgl.system.MemoryStack.*;
@@ -48,7 +48,7 @@ import static org.lwjgl.system.windows.WinBase.*;
  *
  * @author wil
  */
-public class WGLContext implements JAWTGLContext {
+public class WGLContext implements GLContext {
     
     public static class Extensions {
         
@@ -247,7 +247,7 @@ public class WGLContext implements JAWTGLContext {
                 // Get pixel format attributes through legacy PFDs
                 try (MemoryStack stack = stackPush()) {
                     PIXELFORMATDESCRIPTOR pfd = PIXELFORMATDESCRIPTOR.calloc(stack);
-                    if (!toBoolean(DescribePixelFormat(null, dc,
+                    if (!BOOL(DescribePixelFormat(null, dc,
                                              pixelFormat,
                                              pfd)))
                     {
@@ -256,14 +256,14 @@ public class WGLContext implements JAWTGLContext {
                         throw new AWTException("WGL: Failed to describe pixel format");
                     }
 
-                    if (!toBoolean(pfd.dwFlags() & PFD_DRAW_TO_WINDOW) ||
-                        !toBoolean(pfd.dwFlags() & PFD_SUPPORT_OPENGL))
+                    if (!BOOL(pfd.dwFlags() & PFD_DRAW_TO_WINDOW) ||
+                        !BOOL(pfd.dwFlags() & PFD_SUPPORT_OPENGL))
                     {
                         continue;
                     }
 
-                    if (!toBoolean(pfd.dwFlags() & PFD_GENERIC_ACCELERATED) &&
-                        toBoolean(pfd.dwFlags() & PFD_GENERIC_FORMAT))
+                    if (!BOOL(pfd.dwFlags() & PFD_GENERIC_ACCELERATED) &&
+                        BOOL(pfd.dwFlags() & PFD_GENERIC_FORMAT))
                     {
                         continue;
                     }
@@ -271,7 +271,7 @@ public class WGLContext implements JAWTGLContext {
                     if (pfd.iPixelType() != PFD_TYPE_RGBA)
                         continue;
 
-                    if (!!(toBoolean(pfd.dwFlags() & PFD_DOUBLEBUFFER)) != fbconfig.doublebuffer)
+                    if (!!(BOOL(pfd.dwFlags() & PFD_DOUBLEBUFFER)) != fbconfig.doublebuffer)
                         continue;
 
                     data.redBits = pfd.cRedBits();
@@ -288,7 +288,7 @@ public class WGLContext implements JAWTGLContext {
                     data.accumAlphaBits = pfd.cAccumAlphaBits();
 
                     data.auxBuffers = pfd.cAuxBuffers();
-                    data.stereo = toBoolean(pfd.dwFlags() & PFD_STEREO);
+                    data.stereo = BOOL(pfd.dwFlags() & PFD_STEREO);
                 }
 
                 data.handle = pixelFormat;
@@ -297,7 +297,7 @@ public class WGLContext implements JAWTGLContext {
             }
         }
         
-        if (!toBoolean(usableCount))
+        if (!BOOL(usableCount))
         {
             memFree(attribs);
             memFree(values);
@@ -458,7 +458,7 @@ public class WGLContext implements JAWTGLContext {
         try (MemoryStack stack = stackPush()) {
             PIXELFORMATDESCRIPTOR pfd = PIXELFORMATDESCRIPTOR.calloc(stack);
             
-            if (!toBoolean(DescribePixelFormat(null, dc,
+            if (!BOOL(DescribePixelFormat(null, dc,
                              (int) pixelFormat.handle, pfd))) {
                 throw new AWTException("WGL: Failed to retrieve PFD for selected pixel format");
             }            
@@ -475,7 +475,7 @@ public class WGLContext implements JAWTGLContext {
                 }
             }
 
-            if (toBoolean(ctxconfig.profile)) {
+            if (BOOL(ctxconfig.profile)) {
                 if (!wgl.ARB_create_context_profile) {
                     throw new AWTException("WGL: OpenGL profile requested but WGL_ARB_create_context_profile is unavailable");
                 }
@@ -508,7 +508,7 @@ public class WGLContext implements JAWTGLContext {
             if (ctxconfig.debug)
                 flags |= WGL_CONTEXT_DEBUG_BIT_ARB;
 
-            if (toBoolean(ctxconfig.robustness))
+            if (BOOL(ctxconfig.robustness))
             {
                 if (wgl.ARB_create_context_robustness)
                 {
@@ -527,7 +527,7 @@ public class WGLContext implements JAWTGLContext {
                 }
             }
 
-            if (toBoolean(ctxconfig.release))
+            if (BOOL(ctxconfig.release))
             {
                 if (wgl.ARB_context_flush_control)
                 {
@@ -559,10 +559,10 @@ public class WGLContext implements JAWTGLContext {
                 attribs.put(WGL_CONTEXT_MINOR_VERSION_ARB).put(ctxconfig.minor);
             }
 
-            if (toBoolean(flags))
+            if (BOOL(flags))
                 attribs.put(WGL_CONTEXT_FLAGS_ARB).put(flags);
 
-            if (toBoolean(mask))
+            if (BOOL(mask))
                 attribs.put(WGL_CONTEXT_PROFILE_MASK_ARB).put(mask);
 
             attribs.put(0).put(0);

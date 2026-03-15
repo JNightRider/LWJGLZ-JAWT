@@ -2,21 +2,23 @@
  * Copyright LWJGLZ. All rights reserved.
  * License terms: https://opensource.org/license/BSD-3-clause
  */
-package org.lwjgl.opengl.jawt;
+package org.lwjgl.opengl.awt;
 
 import java.awt.AWTException;
 import java.awt.Component;
 
 import org.lwjgl.system.jawt.*;
+
 import static org.lwjgl.system.jawt.JAWTFunctions.*;
+import static org.lwjgl.system.linux.X11.*;
 
 /**
  *
  * @author wil
  * @param <T>
  */
-public class Win32Platform<T extends Component> implements JAWTGLPlatform<T> {
-
+public class X11Platform<T extends Component> implements GLPlatform<T> {
+    
     private JAWT awt;
     private JAWTDrawingSurface ds;
     
@@ -25,9 +27,8 @@ public class Win32Platform<T extends Component> implements JAWTGLPlatform<T> {
     private final GLFBconfig fbconfig = new GLFBconfig();
     private final GLPlatformConfig ctxconfig = new GLPlatformConfig();
 
-    public Win32Platform() {
-    }
-    
+    public X11Platform() { }
+
     @Override
     public void create(T handle) throws AWTException {
         awt = JAWT.calloc();
@@ -47,7 +48,7 @@ public class Win32Platform<T extends Component> implements JAWTGLPlatform<T> {
             }
         }
     }
-
+    
     @Override
     public void lock() throws AWTException {
         check_AWT_GetDrawingSurface();
@@ -83,16 +84,25 @@ public class Win32Platform<T extends Component> implements JAWTGLPlatform<T> {
     }
 
     @Override
+    public T getComponent() {
+        return component;
+    }
+    
+    public int getScreen() {
+        return XDefaultScreen(getDisplay());
+    }
+
+    @Override
     public long getNativeDisplay() {
-        return getHWND();
+        return getDisplay();
     }
 
     @Override
     public long getNativeWindow() {
-        return getHDC();
+        return getDrawable();
     }
     
-    public long getHWND() {
+    public long getDisplay() {
         check_AWT_GetDrawingSurface();
         // Get the drawing surface info
         JAWTDrawingSurfaceInfo dsi = JAWT_DrawingSurface_GetDrawingSurfaceInfo(ds, ds.GetDrawingSurfaceInfo());
@@ -102,14 +112,14 @@ public class Win32Platform<T extends Component> implements JAWTGLPlatform<T> {
         
         try {
             // Get the platform-specific drawing info
-            JAWTWin32DrawingSurfaceInfo dsi_win = JAWTWin32DrawingSurfaceInfo.create(dsi.platformInfo());
-            return dsi_win.hwnd();
+            JAWTX11DrawingSurfaceInfo dsi_x11 = JAWTX11DrawingSurfaceInfo.create(dsi.platformInfo());
+            return dsi_x11.display();
         } finally {
             JAWT_DrawingSurface_FreeDrawingSurfaceInfo(dsi, ds.FreeDrawingSurfaceInfo());
         }
     }
-
-    public long getHDC() {
+    
+    public long getDrawable() {
         check_AWT_GetDrawingSurface();
         // Get the drawing surface info
         JAWTDrawingSurfaceInfo dsi = JAWT_DrawingSurface_GetDrawingSurfaceInfo(ds, ds.GetDrawingSurfaceInfo());
@@ -119,15 +129,10 @@ public class Win32Platform<T extends Component> implements JAWTGLPlatform<T> {
         
         try {
             // Get the platform-specific drawing info
-            JAWTWin32DrawingSurfaceInfo dsi_win = JAWTWin32DrawingSurfaceInfo.create(dsi.platformInfo());
-            return dsi_win.hdc();
+            JAWTX11DrawingSurfaceInfo dsi_x11 = JAWTX11DrawingSurfaceInfo.create(dsi.platformInfo());
+            return dsi_x11.drawable();
         } finally {
             JAWT_DrawingSurface_FreeDrawingSurfaceInfo(dsi, ds.FreeDrawingSurfaceInfo());
         }
-    }
-
-    @Override
-    public T getComponent() {
-        return component;
     }
 }
