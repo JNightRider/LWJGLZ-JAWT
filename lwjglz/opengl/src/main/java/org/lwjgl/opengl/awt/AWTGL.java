@@ -8,25 +8,46 @@ import java.awt.Component;
 import java.util.List;
 
 import org.lwjgl.system.Platform;
+
 import static org.lwjgl.awt.AWT.*;
+import static org.lwjgl.opengl.awt.AWTGLChecks.*;
+import static org.lwjgl.system.Checks.*;
+import static org.lwjgl.system.Configuration.*;
 
 /**
  *
  * @author wil
  */
 public final class AWTGL {
+    public static final int
+            AWT_NATIVE_CONTEXT_API      = 0,
+            AWT_EGL_CONTEXT_API         = 1;
+    
+    public static final int
+            AWT_NO_API                 = 0,
+            AWT_OPENGL_ES_API          = 1,
+            AWT_OPENGL_API             = 2;
+    
+    public static final int
+            AWT_NO_ROBUSTNESS          = 0,
+            AWT_NO_RESET_NOTIFICATION  = 1,
+            AWT_LOSE_CONTEXT_ON_RESET  = 2;
+    
+    public static final int
+            AWT_OPENGL_ANY_PROFILE     = 0,
+            AWT_OPENGL_CORE_PROFILE    = 1,
+            AWT_OPENGL_COMPAT_PROFILE  = 2;
+    
+    public static final int
+            AWT_ANY_RELEASE_BEHAVIOR   = 0,
+            AWT_RELEASE_BEHAVIOR_FLUSH = 1,
+            AWT_RELEASE_BEHAVIOR_NONE  = 2;
     
     public static <T extends Component> GLPlatform<T> glGetAttachAWTWindow() {
         switch (Platform.get()) {
-            case FREEBSD, LINUX -> {
-                return new X11Platform<>();
-            }
-            case WINDOWS -> {
-                return new Win32Platform<>();
-            }
-            case MACOSX -> {
-                return new CocoaPlatform<>();
-            }
+            case FREEBSD, LINUX -> { return new X11Platform<>();   }
+            case WINDOWS        -> { return new Win32Platform<>(); }
+            case MACOSX         -> { return new CocoaPlatform<>(); }
             default ->
                 throw new UnsupportedOperationException("Platform " + Platform.get() + " not yet supported");
         }
@@ -35,20 +56,55 @@ public final class AWTGL {
     public static <T extends Component, E extends GLPlatform<T>> GLContext glNewAttachAWTContext(E platform) {
         switch (Platform.get()) {
             case FREEBSD, LINUX -> {
-                if (isWayland()) {
-                    return new EGLContext(platform);
+                if (isWayland() && !"native".equals(OPENGL_CONTEXT_API.get())) {
+                    if (CHECKS) {
+                        checkWL(platform);
+                    }
+                    return nglNewAttachAWTWLContext(platform);
                 }
-                return new GLX_Context((X11Platform) platform);
+                if (CHECKS) {
+                    checkX11(platform);
+                }
+                return nglNewAttachAWTX11Context((X11Platform) platform);
             }
             case WINDOWS -> {
-                return new WGLContext((Win32Platform) platform);
+                if (CHECKS) {
+                    checkWin32(platform);
+                }
+                return nglNewAttachAWTWin32Context((Win32Platform) platform);
             }
-            case MACOSX -> {
-                return new NSGLContext((CocoaPlatform) platform);
-            }
+            case MACOSX  -> { return new NSGLContext((CocoaPlatform) platform); }
             default ->
                 throw new UnsupportedOperationException("Platform " + Platform.get() + " not yet supported");
         }
+    }
+    
+    public static <T extends Component, E extends GLPlatform<T>> GLContext nglNewAttachAWTWLContext(GLPlatform platform) {
+        int source = platform.getPlatformConfig().source;
+        if (source == AWT_NATIVE_CONTEXT_API || source == AWT_EGL_CONTEXT_API) {
+            return new EGLContext(platform);
+        }  
+        throw new IllegalStateException("The context " + source + " is not compatible.");
+    }
+    
+    public static <T extends Component, E extends GLPlatform<T>> GLContext nglNewAttachAWTX11Context(X11Platform platform) {        
+        int source = platform.getPlatformConfig().source;
+        if (source == AWT_NATIVE_CONTEXT_API) {
+            return new GLXContext(platform);
+        } else if (source == AWT_EGL_CONTEXT_API) {
+            return new EGLContext(platform);
+        }        
+        throw new IllegalStateException("The context " + source + " is not compatible.");
+    }
+    
+    public static <T extends Component, E extends GLPlatform<T>> GLContext nglNewAttachAWTWin32Context(Win32Platform platform) {
+        int source = platform.getPlatformConfig().source;
+        if (source == AWT_NATIVE_CONTEXT_API) {
+            return new WGLContext(platform);
+        } else if (source == AWT_EGL_CONTEXT_API) {
+            return new EGLContext(platform);
+        }        
+        throw new IllegalStateException("The context " + source + " is not compatible.");
     }
     
     public static boolean glStringInExtensionString(String extension, String extensions) {

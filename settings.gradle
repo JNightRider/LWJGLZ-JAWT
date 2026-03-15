@@ -1,6 +1,6 @@
 rootProject.name = 'lwjglz'
 
-include ':core'
-include ':opengl'
-include ':vulkan'
+include ':lwjglz:core'
+include ':lwjglz:opengl'
+include ':lwjglz:vulkan'
 

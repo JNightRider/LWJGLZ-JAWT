@@ -15,8 +15,6 @@ import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
 import org.lwjgl.system.windows.*;
 
-import static org.lwjgl.awt.AWT.*;
-
 import static org.lwjgl.opengl.GL11.*;
 import static org.lwjgl.opengl.WGL.*;
 import static org.lwjgl.opengl.WGLARBContextFlushControl.*;
@@ -33,7 +31,8 @@ import static org.lwjgl.opengl.WGLEXTColorspace.*;
 import static org.lwjgl.opengl.WGLEXTCreateContextES2Profile.*;
 import static org.lwjgl.opengl.WGLEXTExtensionsString.*;
 import static org.lwjgl.opengl.WGLEXTSwapControl.*;
-import static org.lwjgl.opengl.awt.GLPlatformConfig.*;
+
+import static org.lwjgl.awt.AWT.*;
 import static org.lwjgl.opengl.awt.AWTGL.*;
 
 import static org.lwjgl.system.APIUtil.*;
@@ -142,7 +141,7 @@ public class WGLContext implements GLContext {
             if (wgl.ARB_multisample) 
                 attribs.put(WGL_SAMPLES_ARB);
             
-            if (ctxconfig.client == JAWT_OPENGL_API)
+            if (ctxconfig.client == AWT_OPENGL_API)
             {
                 if (wgl.ARB_framebuffer_sRGB || wgl.EXT_framebuffer_sRGB)
                     attribs.put(WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB);
@@ -228,7 +227,7 @@ public class WGLContext implements GLContext {
                 if (wgl.ARB_multisample)
                     data.samples = findPixelFormatAttribValueWGL(attribs, values, WGL_SAMPLES_ARB);
 
-                if (ctxconfig.client == JAWT_OPENGL_API)
+                if (ctxconfig.client == AWT_OPENGL_API)
                 {
                     if (wgl.ARB_framebuffer_sRGB || wgl.EXT_framebuffer_sRGB)
                         data.sRGB = findBoolPixelFormatAttribValueWGL(attribs, values, WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB);
@@ -468,7 +467,7 @@ public class WGLContext implements GLContext {
         }
         
         
-        if (ctxconfig.client == JAWT_OPENGL_API) {
+        if (ctxconfig.client == AWT_OPENGL_API) {
             if (ctxconfig.forward) {
                 if (!wgl.ARB_create_context) {
                     throw new AWTException("WGL: A forward compatible OpenGL context requested but WGL_ARB_create_context is unavailable");
@@ -492,14 +491,14 @@ public class WGLContext implements GLContext {
         {
             int mask = 0, flags = 0;
 
-            if (ctxconfig.client == JAWT_OPENGL_API)
+            if (ctxconfig.client == AWT_OPENGL_API)
             {
                 if (ctxconfig.forward)
                     flags |= WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;
 
-                if (ctxconfig.profile == JAWT_OPENGL_CORE_PROFILE)
+                if (ctxconfig.profile == AWT_OPENGL_CORE_PROFILE)
                     mask |= WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
-                else if (ctxconfig.profile == JAWT_OPENGL_COMPAT_PROFILE)
+                else if (ctxconfig.profile == AWT_OPENGL_COMPAT_PROFILE)
                     mask |= WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
             }
             else
@@ -512,12 +511,12 @@ public class WGLContext implements GLContext {
             {
                 if (wgl.ARB_create_context_robustness)
                 {
-                    if (ctxconfig.robustness == JAWT_NO_RESET_NOTIFICATION)
+                    if (ctxconfig.robustness == AWT_NO_RESET_NOTIFICATION)
                     {
                         attribs.put(WGL_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB)
                                .put(WGL_NO_RESET_NOTIFICATION_ARB);
                     }
-                    else if (ctxconfig.robustness == JAWT_LOSE_CONTEXT_ON_RESET)
+                    else if (ctxconfig.robustness == AWT_LOSE_CONTEXT_ON_RESET)
                     {
                         attribs.put(WGL_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB)
                                .put(WGL_LOSE_CONTEXT_ON_RESET_ARB);
@@ -531,12 +530,12 @@ public class WGLContext implements GLContext {
             {
                 if (wgl.ARB_context_flush_control)
                 {
-                    if (ctxconfig.release == JAWT_RELEASE_BEHAVIOR_NONE)
+                    if (ctxconfig.release == AWT_RELEASE_BEHAVIOR_NONE)
                     {
                         attribs.put(WGL_CONTEXT_RELEASE_BEHAVIOR_ARB)
                                .put(WGL_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB);
                     }
-                    else if (ctxconfig.release == JAWT_RELEASE_BEHAVIOR_FLUSH)
+                    else if (ctxconfig.release == AWT_RELEASE_BEHAVIOR_FLUSH)
                     {
                         attribs.put(WGL_CONTEXT_RELEASE_BEHAVIOR_ARB)
                                .put(WGL_CONTEXT_RELEASE_BEHAVIOR_FLUSH_ARB);
@@ -574,7 +573,7 @@ public class WGLContext implements GLContext {
                 final int error = GetLastError();
 
                 if (error == (0xc0070000 | ERROR_INVALID_VERSION_ARB)) {
-                    if (ctxconfig.client == JAWT_OPENGL_API) {
+                    if (ctxconfig.client == AWT_OPENGL_API) {
                         throw new AWTException("WGL: Driver does not support OpenGL version %i.%i"
                                 .formatted(ctxconfig.major,
                                         ctxconfig.minor));
@@ -588,7 +587,7 @@ public class WGLContext implements GLContext {
                 } else if (error == (0xc0070000 | ERROR_INCOMPATIBLE_DEVICE_CONTEXTS_ARB)) {
                     throw new AWTException("WGL: The share context is not compatible with the requested context");
                 } else {
-                    if (ctxconfig.client == JAWT_OPENGL_API) {
+                    if (ctxconfig.client == AWT_OPENGL_API) {
                         throw new AWTException("WGL: Failed to create OpenGL context");
                     } else {
                         throw new AWTException("WGL: Failed to create OpenGL ES context");

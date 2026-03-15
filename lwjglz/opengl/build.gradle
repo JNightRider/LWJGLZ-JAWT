@@ -36,7 +36,7 @@ repositories {
 
 dependencies {
 	implementation platform("org.lwjgl:lwjgl-bom:$lwjglVersion")
-    implementation project(":core")
+    implementation project(":lwjglz:core")
 
 	implementation "org.lwjgl:lwjgl"
 	implementation "org.lwjgl:lwjgl-egl"

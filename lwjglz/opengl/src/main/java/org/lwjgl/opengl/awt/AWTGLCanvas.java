@@ -7,6 +7,7 @@ package org.lwjgl.opengl.awt;
 import java.awt.AWTException;
 import java.awt.Canvas;
 import java.awt.Graphics;
+import java.awt.GraphicsConfiguration;
 import java.awt.event.ComponentAdapter;
 import java.awt.event.ComponentEvent;
 import java.awt.event.ComponentListener;
@@ -38,19 +39,29 @@ public class AWTGLCanvas extends Canvas {
     private final ComponentListener listener = new ComponentAdapter() {
         @Override
         public void componentResized(ComponentEvent e) {
-            AffineTransform t = AWTGLCanvas.this.getGraphicsConfiguration().getDefaultTransform();
-            float sx = (float) t.getScaleX(), sy = (float) t.getScaleY();
-            AWTGLCanvas.this.framebufferWidth = (int) (getWidth() * sx);
-            AWTGLCanvas.this.framebufferHeight = (int) (getHeight() * sy);
+            synchronized (SYNC_LOCK) {
+                GraphicsConfiguration gc = AWTGLCanvas.this.getGraphicsConfiguration();
+                if (gc == null) {
+                    return;
+                }
+
+                AffineTransform at = gc.getDefaultTransform();
+                float sx = (float) at.getScaleX(),
+                      sy = (float) at.getScaleY();
+
+                int fw = (int) (AWTGLCanvas.this.getWidth() * sx);
+                int fh = (int) (AWTGLCanvas.this.getHeight() * sy);
+
+                if (fw != framebufferWidth || fh != framebufferHeight) {
+                    framebufferWidth = Math.max(fw, 1);
+                    framebufferHeight = Math.max(fh, 1);
+                }
+            }
         }
     };
     
     public AWTGLCanvas() {
         AWTGLCanvas.this.addComponentListener(listener);
-    }
-
-    public void platformHint(int name, int value) {
-        
     }
     
     @Override

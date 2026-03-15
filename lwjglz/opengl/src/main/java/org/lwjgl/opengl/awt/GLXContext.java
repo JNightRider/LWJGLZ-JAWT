@@ -14,8 +14,6 @@ import org.lwjgl.*;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
 
-import static org.lwjgl.awt.AWT.*;
-
 import static org.lwjgl.opengl.GLX.*;
 import static org.lwjgl.opengl.GLX14.*;
 import static org.lwjgl.opengl.GLXARBContextFlushControl.*;
@@ -28,7 +26,8 @@ import static org.lwjgl.opengl.GLXARBGetProcAddress.*;
 import static org.lwjgl.opengl.GLXEXTCreateContextES2Profile.*;
 import static org.lwjgl.opengl.GLXEXTSwapControl.*;
 import static org.lwjgl.opengl.GLXSGISwapControl.*;
-import static org.lwjgl.opengl.awt.GLPlatformConfig.*;
+
+import static org.lwjgl.awt.AWT.*;
 import static org.lwjgl.opengl.awt.AWTGL.*;
 
 import static org.lwjgl.system.APIUtil.*;
@@ -41,7 +40,7 @@ import static org.lwjgl.system.linux.X11.*;
  *
  * @author wil
  */
-public class GLX_Context implements GLContext {
+public class GLXContext implements GLContext {
     
     /** Contains the function pointers loaded from {@code GL.getFunctionProvider()}. */
     public static final class Functions {
@@ -81,7 +80,7 @@ public class GLX_Context implements GLContext {
     private final Extensions glx;
     private long context;
     
-    public GLX_Context(X11Platform platform) {
+    public GLXContext(X11Platform platform) {
         this.platform   = platform;
         this.glx        = new Extensions();
     }
@@ -265,7 +264,7 @@ public class GLX_Context implements GLContext {
             throw new AWTException("GLX: Failed to find a suitable GLXFBConfig");
         }
         
-        if (ctxconfig.client == JAWT_OPENGL_ES_API)
+        if (ctxconfig.client == AWT_OPENGL_ES_API)
         {
             if (!glx.ARB_create_context ||
                 !glx.ARB_create_context_profile ||
@@ -294,14 +293,14 @@ public class GLX_Context implements GLContext {
         {
             int mask = 0, flags = 0;
 
-            if (ctxconfig.client == JAWT_OPENGL_API)
+            if (ctxconfig.client == AWT_OPENGL_API)
             {
                 if (ctxconfig.forward)
                     flags |= GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;
 
-                if (ctxconfig.profile == JAWT_OPENGL_CORE_PROFILE)
+                if (ctxconfig.profile == AWT_OPENGL_CORE_PROFILE)
                     mask |= GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
-                else if (ctxconfig.profile == JAWT_OPENGL_COMPAT_PROFILE)
+                else if (ctxconfig.profile == AWT_OPENGL_COMPAT_PROFILE)
                     mask |= GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
             }
             else
@@ -314,12 +313,12 @@ public class GLX_Context implements GLContext {
             {
                 if (glx.ARB_create_context_robustness)
                 {
-                    if (ctxconfig.robustness == JAWT_NO_RESET_NOTIFICATION)
+                    if (ctxconfig.robustness == AWT_NO_RESET_NOTIFICATION)
                     {
                         attribs.put(GLX_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB)
                                .put(GLX_NO_RESET_NOTIFICATION_ARB);
                     }
-                    else if (ctxconfig.robustness == JAWT_LOSE_CONTEXT_ON_RESET)
+                    else if (ctxconfig.robustness == AWT_LOSE_CONTEXT_ON_RESET)
                     {
                         attribs.put(GLX_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB)
                                .put(GLX_LOSE_CONTEXT_ON_RESET_ARB);
@@ -333,12 +332,12 @@ public class GLX_Context implements GLContext {
             {
                 if (glx.ARB_context_flush_control)
                 {
-                    if (ctxconfig.release == JAWT_RELEASE_BEHAVIOR_NONE)
+                    if (ctxconfig.release == AWT_RELEASE_BEHAVIOR_NONE)
                     {
                         attribs.put(GLX_CONTEXT_RELEASE_BEHAVIOR_ARB)
                                .put(GLX_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB);
                     }
-                    else if (ctxconfig.release == JAWT_RELEASE_BEHAVIOR_FLUSH)
+                    else if (ctxconfig.release == AWT_RELEASE_BEHAVIOR_FLUSH)
                     {
                         attribs.put(GLX_CONTEXT_RELEASE_BEHAVIOR_ARB)
                                .put(GLX_CONTEXT_RELEASE_BEHAVIOR_FLUSH_ARB);
@@ -381,8 +380,8 @@ public class GLX_Context implements GLContext {
             //       violation of the extension spec
             if (context == NULL)
             {
-                if (ctxconfig.client == JAWT_OPENGL_API &&
-                    ctxconfig.profile == JAWT_OPENGL_ANY_PROFILE &&
+                if (ctxconfig.client == AWT_OPENGL_API &&
+                    ctxconfig.profile == AWT_OPENGL_ANY_PROFILE &&
                     ctxconfig.forward == false)
                 {
                     context = createLegacyContextGLX(_native.handle, share);
