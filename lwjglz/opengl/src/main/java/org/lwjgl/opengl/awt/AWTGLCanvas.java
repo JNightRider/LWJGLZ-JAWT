@@ -79,7 +79,6 @@ public class AWTGLCanvas extends Canvas {
     public void removeNotify() {
         synchronized (SYNC_LOCK) {
             destroy();
-            firstRun.set(true);
             super.removeNotify();
         }
     }
@@ -161,6 +160,7 @@ public class AWTGLCanvas extends Canvas {
      */
     public final void destroy() {
         synchronized (SYNC_LOCK) {
+            firstRun.set(true);
             if (context != null) {
                 context.destroy();
                 context = null;
