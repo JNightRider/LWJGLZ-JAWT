@@ -5,27 +5,21 @@
 package org.lwjgl.awt;
 
 import java.awt.*;
+import java.awt.event.*;
 import javax.swing.*;
 
-//import org.joml.*;
-import org.lwjgl.*;
 import org.lwjgl.opengl.awt.*;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
 
-import java.io.*;
 import java.nio.*;
-import java.util.*;
-
+import org.joml.Matrix4f;
+import org.joml.Quaternionf;
 
 import static org.lwjgl.opengl.awt.AWTGL.*;
 import static org.lwjgl.opengl.awt.GLData.*;
-
-//import static org.joml.Math.*;
-//import static org.lwjgl.demo.util.IOUtil.*;
 import static org.lwjgl.opengl.GL30C.*;
 import static org.lwjgl.system.MemoryStack.*;
-import static org.lwjgl.system.MemoryUtil.*;
 
 /**
  *
@@ -33,6 +27,9 @@ import static org.lwjgl.system.MemoryUtil.*;
  */
 public class TriangleOpengl {
     
+    /** The conversion factor from nano to base */
+    public static final float NANO_TO_BASE = 1.0e9f;
+        
     private final String vertex_shader_text =
             """
             #version 330
@@ -47,8 +44,8 @@ public class TriangleOpengl {
             }
             """;
 
-    private final String fragment_shader_text
-            = """
+    private final String fragment_shader_text = 
+            """
               #version 330
               in vec3 color;
               out vec4 fragment;
@@ -56,40 +53,123 @@ public class TriangleOpengl {
               {
                   fragment = vec4(color, 1.0);
               }
-              """;
+            """;
     
+    private final float[] vertices = {
+        // Positions         // Colors
+        -0.6f, -0.4f,   0.0f, 1.0f, 0.0f, 0.0f,
+        0.6f, -0.4f,    0.0f, 0.0f, 1.0f, 0.0f,
+        0.0f, 0.6f,     0.0f, 0.0f, 0.0f, 1.0f
+    };
+        
+    private int vertex_buffer;
+    private int vertex_array;
+    
+    private int program;
+    private int mvp_location;
+    
+    private AWTGLCanvas canvas;
+    long lastTime = System.nanoTime();
+   
     private void init() {
         GLCapabilities caps = GL.createCapabilities();
         if (!caps.OpenGL33) {
             throw new IllegalStateException("This demo requires OpenGL 3.3 or higher.");
         }
 
-        System.err.println("GL_VENDOR: " + glGetString(GL_VENDOR));
-        System.err.println("GL_RENDERER: " + glGetString(GL_RENDERER));
-        System.err.println("GL_VERSION: " + glGetString(GL_VERSION));
+        System.out.println("GL_VENDOR: " + glGetString(GL_VENDOR));
+        System.out.println("GL_RENDERER: " + glGetString(GL_RENDERER));
+        System.out.println("GL_VERSION: " + glGetString(GL_VERSION));
+
+        vertex_buffer = glGenBuffers();
+        glBindBuffer(GL_ARRAY_BUFFER, vertex_buffer);
+        glBufferData(GL_ARRAY_BUFFER, vertices, GL_STATIC_DRAW);
+
+        int vertex_shader = glCreateShader(GL_VERTEX_SHADER);
+        glShaderSource(vertex_shader, vertex_shader_text);
+        glCompileShader(vertex_shader);
+
+        int fragment_shader = glCreateShader(GL_FRAGMENT_SHADER);
+        glShaderSource(fragment_shader, fragment_shader_text);
+        glCompileShader(fragment_shader);
+
+        program = glCreateProgram();
+        glAttachShader(program, vertex_shader);
+        glAttachShader(program, fragment_shader);
+        glLinkProgram(program);
+        glUseProgram(program);
+
+        mvp_location = glGetUniformLocation(program, "MVP");
+        int vpos_location = glGetAttribLocation(program, "vPos");
+        int vcol_location = glGetAttribLocation(program, "vCol");
+
+        vertex_array = glGenVertexArrays();
+        glBindVertexArray(vertex_array);
+        glEnableVertexAttribArray(vpos_location);
+        glVertexAttribPointer(vpos_location, 2, GL_FLOAT, false,
+                6 * Float.BYTES, 0);
+        glEnableVertexAttribArray(vcol_location);
+        glVertexAttribPointer(vcol_location, 3, GL_FLOAT, false,
+                              6 * Float.BYTES, 3 * Float.BYTES);
     }
-    
+
     private void loop() {
         
+        int width  = canvas.getFramebufferWidth(),
+            height = canvas.getFramebufferHeight();
+
+        float ratio = (float)width / (float) height;
+
+        glViewport(0, 0, width, height);
+        glClearColor(0.0f, 0.0f, 0.0f, 1.0f);
+        glClear(GL_COLOR_BUFFER_BIT);
+        
+        Matrix4f m   = new Matrix4f(),
+                 p   = new Matrix4f(),
+                 mvp = new Matrix4f();
+
+        m.identity();
+        
+        long time = System.nanoTime();
+        double seconds = (time - lastTime) / 1_000_000_000.0;      
+        m.rotateZ((float) seconds);
+        
+        p.ortho(-ratio, ratio, -1.f, 1.f, 1.f, -1.f);
+        mvp.set(p).mul(m);
+        
+        glUseProgram(program);
+        try (MemoryStack stack = stackPush()) {
+            FloatBuffer ptrMVP = stack.mallocFloat(4 * 4);
+            mvp.get(ptrMVP);
+
+            glUniformMatrix4fv(mvp_location, false, ptrMVP);
+            glBindVertexArray(vertex_array);
+            glDrawArrays(GL_TRIANGLES, 0, 3);
+        }
     }
     
     void run() {
         GLData gldata = new GLData();
         gldata.glHint(GLDATA_CONTEXT_VERSION_MAJOR, 3);
         gldata.glHint(GLDATA_CONTEXT_VERSION_MINOR, 3);
-        gldata.glHint(GLDATA_OPENGL_PROFILE, AWT_OPENGL_CORE_PROFILE);        
-        AWTGLCanvas canvas = new AWTGLCanvas(gldata) {
-            @Override
-            protected void initGL() {
-                init();
-            }
-            @Override
-            protected void paintGL() {
-                loop();
-                swapBuffers();
-            }
-        };
+        gldata.glHint(GLDATA_OPENGL_PROFILE, AWT_OPENGL_CORE_PROFILE);
+        //gldata.glHint(GLDATA_CONTEXT_CREATION_API, AWT_NATIVE_CONTEXT_API);
         
+        {
+            canvas = new AWTGLCanvas(gldata) {
+                @Override
+                protected void initGL() {
+                    setSwapInterval(1);
+                    init();
+                }
+                @Override
+                protected void paintGL() {
+                    loop();
+                    swapBuffers();
+                    Toolkit.getDefaultToolkit().sync();
+                }
+            };
+        }
         {
             JFrame window = new JFrame();
             window.setTitle("OpenGL Triangle");
@@ -98,6 +178,12 @@ public class TriangleOpengl {
             window.setPreferredSize(new Dimension(640, 480));
             
             window.add(canvas);
+            window.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosing(WindowEvent e) {
+                    destroy();
+                }
+            });
             
             window.pack();
             window.setVisible(true);
@@ -105,7 +191,14 @@ public class TriangleOpengl {
         }
     }
     
+    private void destroy() {
+        glDeleteProgram(program);
+        glDeleteBuffers(vertex_buffer);
+        glDeleteVertexArrays(vertex_array);
+    }
+    
     public static void main(String[] args) {
+        Configuration.OPENGL_CONTEXT_API.set("native");
         new TriangleOpengl().run();
     }
 
