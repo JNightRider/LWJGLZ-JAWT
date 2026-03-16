@@ -43,7 +43,14 @@ public final class AWTGL {
             AWT_RELEASE_BEHAVIOR_FLUSH = 1,
             AWT_RELEASE_BEHAVIOR_NONE  = 2;
     
-    public static <T extends Component> GLPlatform<T> glGetAttachAWTWindow(GLData glhit) {
+    public static <T extends Component> GLPlatform<T> glGetAttachAWTWindow(GLData glhit, long share) {
+        if (glhit == null) {
+            throw new NullPointerException("GLData");
+        }
+        
+        glhit.getPlatformConfig()
+             .share = share;
+        
         switch (Platform.get()) {
             case FREEBSD, LINUX -> { return new X11Platform<>(glhit);   }
             case WINDOWS        -> { return new Win32Platform<>(glhit); }
@@ -117,7 +124,7 @@ public final class AWTGL {
         return false;
     }
     
-    public static GLFBConfig glGetChooseFBConfig(GLFBConfig desired, List<GLFBConfig> alternatives, int count) {
+    static GLFBConfig glGetChooseFBConfig(GLFBConfig desired, List<GLFBConfig> alternatives, int count) {
         int i;
         long missing,   leastMissing   = UINT_MAX;
         long colorDiff, leastColorDiff = UINT_MAX;

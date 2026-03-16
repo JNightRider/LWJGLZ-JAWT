@@ -1,1 +1,4 @@
+group = 'org.lwjgl.awt.vulkan'
+version = '1.0.0'
+
 description = 'lwjglz - vulkan'

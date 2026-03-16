@@ -16,6 +16,7 @@ import java.awt.geom.AffineTransform;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.lwjgl.opengl.awt.AWTGL.*;
+import static org.lwjgl.system.MemoryUtil.*;
 
 /**
  *
@@ -199,7 +200,7 @@ public class AWTGLCanvas extends Canvas {
             try {
                 if (!createdPlatform.get()) {
                     createdPlatform.set(true);  
-                    platform = glGetAttachAWTWindow(gldata);
+                    platform = glGetAttachAWTWindow(gldata, NULL);
                     platform.create(this);
                 }
                 platform.lock();

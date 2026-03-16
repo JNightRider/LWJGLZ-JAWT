@@ -4,3 +4,4 @@ include ':lwjglz:core'
 include ':lwjglz:opengl'
 include ':lwjglz:vulkan'
 
+include 'samples'

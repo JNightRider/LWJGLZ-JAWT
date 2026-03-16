@@ -1,0 +1,10 @@
+group = 'org.lwjgl.awt'
+version = '1.0.0'
+
+description = 'lwjglz - samples'
+
+dependencies {
+    implementation project(':lwjglz:core')
+    implementation project(':lwjglz:opengl')
+    implementation project(':lwjglz:vulkan')
+}

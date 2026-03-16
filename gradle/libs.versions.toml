@@ -1,0 +1,30 @@
+## catalog of libraries and plugins used to build the lwjglz project
+
+[versions]
+
+# Gradle | Test
+guava           = "33.4.6-jre"
+junit-jupiter   = "5.12.1"
+
+# LWJGL3
+lwjgl3          = "3.4.1"
+
+[libraries]
+
+lwjgl3-base     = { module = "org.lwjgl:lwjgl",             version.ref = "lwjgl3" }
+lwjgl3-egl      = { module = "org.lwjgl:lwjgl-egl",         version.ref = "lwjgl3" }
+lwjgl3-jawt     = { module = "org.lwjgl:lwjgl-jawt",        version.ref = "lwjgl3" }
+lwjgl3-vulkan   = { module = "org.lwjgl:lwjgl-vulkan",      version.ref = "lwjgl3" }
+lwjgl3-opengles = { module = "org.lwjgl:lwjgl-opengles",    version.ref = "lwjgl3" }
+lwjgl3-opengl   = { module = "org.lwjgl:lwjgl-opengl",      version.ref = "lwjgl3" }
+lwjgl3-sdl      = { module = "org.lwjgl:lwjgl-sdl",         version.ref = "lwjgl3" }
+lwjgl3-vma      = { module = "org.lwjgl:lwjgl-vma",         version.ref = "lwjgl3" }
+
+guava           = { module = "com.google.guava:guava",          version.ref = "guava"           }
+junit-jupiter   = { module = "org.junit.jupiter:junit-jupiter", version.ref = "junit-jupiter"   }
+junit-platform  = { module = "org.junit.platform:junit-platform-launcher"                       }
+
+
+[bundles]
+
+[plugins]
