@@ -4,7 +4,7 @@ version = '1.0.0'
 description = 'lwjglz - samples'
 
 dependencies {
-    implementation project(':lwjglz:core')
-    implementation project(':lwjglz:opengl')
-    implementation project(':lwjglz:vulkan')
+    api project(':lwjglz:core')
+    api project(':lwjglz:opengl')
+    api project(':lwjglz:vulkan')
 }
