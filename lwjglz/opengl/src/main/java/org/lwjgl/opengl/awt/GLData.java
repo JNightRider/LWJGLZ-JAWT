@@ -159,7 +159,7 @@ public final class GLData {
      */
     public static final int GLDATA_CONTEXT_CREATION_API = 27;
 
-    private final GLFBconfig fbconfig        = new GLFBconfig();
+    private final FrameBufferConfig fbconfig        = new FrameBufferConfig();
     private final GLPlatformConfig ctxconfig = new GLPlatformConfig();
 
     public GLData() { }    
@@ -275,7 +275,7 @@ public final class GLData {
         }
     }
 
-    GLFBconfig getFBConfig() {
+    FrameBufferConfig getFBConfig() {
         return fbconfig;
     }
 

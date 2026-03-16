@@ -8,7 +8,7 @@ package org.lwjgl.opengl.awt;
  *
  * @author wil
  */
-class GLFBconfig {
+class FrameBufferConfig {
     int      redBits         = 8;
     int      greenBits       = 8;
     int      blueBits        = 8;
@@ -25,5 +25,5 @@ class GLFBconfig {
     boolean  sRGB;
     boolean  doublebuffer    = true;
     boolean  transparent;
-    long  handle;
+    long     handle;
 }

@@ -101,7 +101,7 @@ public class WGLContext implements GLContext {
         return findPixelFormatAttribValueWGL(attribs, values, attrib) != 0;
     }
     
-    private GLFBconfig choosePixelFormatWGL(GLPlatformConfig ctxconfig, GLFBconfig fbconfig) throws AWTException {
+    private FrameBufferConfig choosePixelFormatWGL(GLPlatformConfig ctxconfig, FrameBufferConfig fbconfig) throws AWTException {
         int pixelFormat,
             nativeCount, 
             usableCount = 0;
@@ -173,11 +173,11 @@ public class WGLContext implements GLContext {
             }
         }
         
-        List<GLFBconfig> usableConfigs = new ArrayList<>();
+        List<FrameBufferConfig> usableConfigs = new ArrayList<>();
         
             
         for (int i = 0;  i < nativeCount;  i++) {
-            GLFBconfig data = new GLFBconfig();
+            FrameBufferConfig data = new FrameBufferConfig();
             pixelFormat = i + 1;
 
             if (wgl.ARB_pixel_format)
@@ -303,7 +303,7 @@ public class WGLContext implements GLContext {
             throw new AWTException("WGL: The driver does not appear to support OpenGL");
         }
         
-        GLFBconfig closest = glGetChooseFBConfig(fbconfig, usableConfigs, usableCount);
+        FrameBufferConfig closest = glGetChooseFBConfig(fbconfig, usableConfigs, usableCount);
         if (closest == null) {
             memFree(attribs);
             memFree(values);
@@ -436,7 +436,7 @@ public class WGLContext implements GLContext {
         
         GLData gldata = platform.getGLData();
         GLPlatformConfig ctxconfig = gldata.getPlatformConfig();
-        GLFBconfig fbconfig = gldata.getFBConfig();
+        FrameBufferConfig fbconfig = gldata.getFBConfig();
         
         IntBuffer attribs = BufferUtils.createIntBuffer(40);
         long share = NULL;
@@ -450,7 +450,7 @@ public class WGLContext implements GLContext {
             throw new AWTException("WGL: Failed to retrieve DC for window");
         }
         
-        GLFBconfig pixelFormat = choosePixelFormatWGL(ctxconfig, fbconfig);
+        FrameBufferConfig pixelFormat = choosePixelFormatWGL(ctxconfig, fbconfig);
         if (pixelFormat == null) {
             throw new AWTException("WGL: PilexFormat");
         }

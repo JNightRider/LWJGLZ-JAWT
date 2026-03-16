@@ -106,7 +106,7 @@ public class EGLContext implements GLContext {
         }
     }
 
-    private GLFBconfig chooseEGLConfig(GLPlatformConfig ctxconfig, GLFBconfig fbconfig) throws AWTException {
+    private FrameBufferConfig chooseEGLConfig(GLPlatformConfig ctxconfig, FrameBufferConfig fbconfig) throws AWTException {
         int apiBit, surfaceTypeBit;
         boolean wrongApiAvailable = false;
         
@@ -142,12 +142,12 @@ public class EGLContext implements GLContext {
         eglGetConfigs(display, nativeConfigs, nativeCount);
         
         int usableCount = 0;
-        List<GLFBconfig> usableConfigs = new ArrayList<>();
+        List<FrameBufferConfig> usableConfigs = new ArrayList<>();
         
         for (int i = 0;  i < nativeCount.get(0);  i++)
         {
             long/*EGLConfig*/ config = nativeConfigs.get(i);
-            GLFBconfig data = new GLFBconfig();
+            FrameBufferConfig data = new FrameBufferConfig();
             
              // Only consider RGB(A) EGLConfigs
             if (getEGLConfigAttrib(config, EGL_COLOR_BUFFER_TYPE) != EGL_RGB_BUFFER)
@@ -190,7 +190,7 @@ public class EGLContext implements GLContext {
             usableCount++;
         }
         
-        GLFBconfig result = glGetChooseFBConfig(fbconfig, usableConfigs, usableCount);
+        FrameBufferConfig result = glGetChooseFBConfig(fbconfig, usableConfigs, usableCount);
         memFree(nativeCount);
         memFree(nativeConfigs);
         
@@ -289,7 +289,7 @@ public class EGLContext implements GLContext {
         
         GLData gldata = platform.getGLData();
         GLPlatformConfig ctxconfig = gldata.getPlatformConfig();
-        GLFBconfig fbconfig = gldata.getFBConfig();
+        FrameBufferConfig fbconfig = gldata.getFBConfig();
         
         IntBuffer attribs = BufferUtils.createIntBuffer(40);
         long share = NULL;
@@ -301,7 +301,7 @@ public class EGLContext implements GLContext {
         if (ctxconfig.share != NULL)
             share = ctxconfig.share;
         
-        GLFBconfig config = chooseEGLConfig(ctxconfig, fbconfig);
+        FrameBufferConfig config = chooseEGLConfig(ctxconfig, fbconfig);
         if (config == null)
             throw new AWTException("EGL: Failed to find a suitable EGLConfig");
         
