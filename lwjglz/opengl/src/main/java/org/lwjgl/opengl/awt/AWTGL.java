@@ -43,10 +43,10 @@ public final class AWTGL {
             AWT_RELEASE_BEHAVIOR_FLUSH = 1,
             AWT_RELEASE_BEHAVIOR_NONE  = 2;
     
-    public static <T extends Component> GLPlatform<T> glGetAttachAWTWindow() {
+    public static <T extends Component> GLPlatform<T> glGetAttachAWTWindow(GLData glhit) {
         switch (Platform.get()) {
-            case FREEBSD, LINUX -> { return new X11Platform<>();   }
-            case WINDOWS        -> { return new Win32Platform<>(); }
+            case FREEBSD, LINUX -> { return new X11Platform<>(glhit);   }
+            case WINDOWS        -> { return new Win32Platform<>(glhit); }
             case MACOSX         -> { return new CocoaPlatform<>(); }
             default ->
                 throw new UnsupportedOperationException("Platform " + Platform.get() + " not yet supported");
@@ -80,7 +80,7 @@ public final class AWTGL {
     }
     
     public static <T extends Component, E extends GLPlatform<T>> GLContext nglNewAttachAWTWLContext(GLPlatform platform) {
-        int source = platform.getPlatformConfig().source;
+        int source = platform.getGLData().getPlatformConfig().source;
         if (source == AWT_NATIVE_CONTEXT_API || source == AWT_EGL_CONTEXT_API) {
             return new EGLContext(platform);
         }  
@@ -88,7 +88,7 @@ public final class AWTGL {
     }
     
     public static <T extends Component, E extends GLPlatform<T>> GLContext nglNewAttachAWTX11Context(X11Platform platform) {        
-        int source = platform.getPlatformConfig().source;
+        int source = platform.getGLData().getPlatformConfig().source;
         if (source == AWT_NATIVE_CONTEXT_API) {
             return new GLXContext(platform);
         } else if (source == AWT_EGL_CONTEXT_API) {
@@ -98,7 +98,7 @@ public final class AWTGL {
     }
     
     public static <T extends Component, E extends GLPlatform<T>> GLContext nglNewAttachAWTWin32Context(Win32Platform platform) {
-        int source = platform.getPlatformConfig().source;
+        int source = platform.getGLData().getPlatformConfig().source;
         if (source == AWT_NATIVE_CONTEXT_API) {
             return new WGLContext(platform);
         } else if (source == AWT_EGL_CONTEXT_API) {

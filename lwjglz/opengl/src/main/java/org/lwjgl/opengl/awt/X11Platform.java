@@ -23,11 +23,15 @@ public class X11Platform<T extends Component> implements GLPlatform<T> {
     private JAWTDrawingSurface ds;
     
     private T component;
-    
-    private final GLFBconfig fbconfig = new GLFBconfig();
-    private final GLPlatformConfig ctxconfig = new GLPlatformConfig();
+    private GLData data;
 
-    public X11Platform() { }
+    public X11Platform() {
+        this(new GLData());
+    }
+
+    public X11Platform(GLData data) {
+        this.data = data;
+    }
 
     @Override
     public void create(T handle) throws AWTException {
@@ -65,13 +69,8 @@ public class X11Platform<T extends Component> implements GLPlatform<T> {
     }
 
     @Override
-    public GLFBconfig getFBconfig() {
-        return fbconfig;
-    }
-
-    @Override
-    public GLPlatformConfig getPlatformConfig() {
-        return ctxconfig;
+    public GLData getGLData() {
+        return data;
     }
 
     @Override

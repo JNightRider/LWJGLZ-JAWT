@@ -287,8 +287,9 @@ public class EGLContext implements GLContext {
     public void createContext() throws AWTException {
         initEGL();
         
-        GLPlatformConfig ctxconfig = platform.getPlatformConfig();
-        GLFBconfig fbconfig = platform.getFBconfig();
+        GLData gldata = platform.getGLData();
+        GLPlatformConfig ctxconfig = gldata.getPlatformConfig();
+        GLFBconfig fbconfig = gldata.getFBConfig();
         
         IntBuffer attribs = BufferUtils.createIntBuffer(40);
         long share = NULL;

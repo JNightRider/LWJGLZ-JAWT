@@ -21,11 +21,14 @@ public class Win32Platform<T extends Component> implements GLPlatform<T> {
     private JAWTDrawingSurface ds;
     
     private T component;
-    
-    private final GLFBconfig fbconfig = new GLFBconfig();
-    private final GLPlatformConfig ctxconfig = new GLPlatformConfig();
+    private GLData data;
 
     public Win32Platform() {
+        this(new GLData());
+    }
+
+    public Win32Platform(GLData data) {
+        this.data = data;
     }
     
     @Override
@@ -64,13 +67,8 @@ public class Win32Platform<T extends Component> implements GLPlatform<T> {
     }
 
     @Override
-    public GLFBconfig getFBconfig() {
-        return fbconfig;
-    }
-
-    @Override
-    public GLPlatformConfig getPlatformConfig() {
-        return ctxconfig;
+    public GLData getGLData() {
+        return data;
     }
 
     @Override

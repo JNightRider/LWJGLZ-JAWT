@@ -25,6 +25,7 @@ public class AWTGLCanvas extends Canvas {
     
     private GLPlatform<Canvas> platform;
     private GLContext context;
+    private GLData gldata;
     
     private final Object SYNC_LOCK = new Object();
 
@@ -60,8 +61,13 @@ public class AWTGLCanvas extends Canvas {
         }
     };
     
-    public AWTGLCanvas() {
+    public AWTGLCanvas(GLData gldata) {
+        this.gldata = gldata;
         AWTGLCanvas.this.addComponentListener(listener);
+    }
+    
+    public AWTGLCanvas() {
+        this(new GLData());
     }
     
     @Override
@@ -193,7 +199,7 @@ public class AWTGLCanvas extends Canvas {
             try {
                 if (!createdPlatform.get()) {
                     createdPlatform.set(true);  
-                    platform = glGetAttachAWTWindow();
+                    platform = glGetAttachAWTWindow(gldata);
                     platform.create(this);
                 }
                 platform.lock();

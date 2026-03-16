@@ -20,9 +20,7 @@ public interface GLPlatform<HANDLE extends Component> {
     
     void unlock() throws AWTException;
     
-    GLFBconfig getFBconfig();
-    
-    GLPlatformConfig getPlatformConfig();
+    GLData getGLData();
  
     HANDLE getComponent();
     

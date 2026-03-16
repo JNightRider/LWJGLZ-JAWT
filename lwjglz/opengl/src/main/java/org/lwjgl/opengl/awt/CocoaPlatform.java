@@ -29,12 +29,7 @@ public class CocoaPlatform<T extends Component> implements GLPlatform<T> {
     }
 
     @Override
-    public GLFBconfig getFBconfig() {
-        throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
-    }
-
-    @Override
-    public GLPlatformConfig getPlatformConfig() {
+    public GLData getGLData() {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 
