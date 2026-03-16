@@ -36,12 +36,13 @@ import static org.lwjgl.awt.AWT.*;
 import static org.lwjgl.opengl.awt.AWTGL.*;
 
 import static org.lwjgl.system.APIUtil.*;
+import static org.lwjgl.system.Checks.*;
 import static org.lwjgl.system.MemoryStack.*;
 import static org.lwjgl.system.MemoryUtil.*;
 import static org.lwjgl.system.windows.GDI32.*;
 import static org.lwjgl.system.windows.User32.*;
-import static org.lwjgl.system.windows.WNDCLASSEX.*;
 import static org.lwjgl.system.windows.WinBase.*;
+import static org.lwjgl.system.windows.WindowsUtil.*;
 
 /**
  *
@@ -49,13 +50,22 @@ import static org.lwjgl.system.windows.WinBase.*;
  */
 public class WGLContext implements GLContext {
     
+    /** Contains the function pointers loaded from {@code GL.getFunctionProvider()}. */
+    public static final class Functions {
+        
+        private Functions() {}
+        
+        /** Function address. */
+        public static final long
+                GetExtensionsStringARB  = apiGetFunctionAddress(GL.getFunctionProvider(), "wglGetExtensionsStringARB"),
+                GetExtensionsStringEXT  = apiGetFunctionAddress(GL.getFunctionProvider(), "wglGetExtensionsStringEXT");
+    }
+    
     public static class Extensions {
         
         private Extensions() {}
         
-        public Boolean 
-                GetExtensionsStringARB          = Boolean.FALSE,
-                GetExtensionsStringEXT          = Boolean.FALSE,
+        public Boolean
                 EXT_swap_control                = Boolean.FALSE,
                 ARB_pixel_format                = Boolean.FALSE,
                 ARB_multisample                 = Boolean.FALSE,
@@ -72,9 +82,6 @@ public class WGLContext implements GLContext {
     
     private final Win32Platform platform;
     private final Extensions wgl;
-    
-    private String helperWindowClass;
-    private long helperWindowHandle;
     
     private long context;
     private long dc;
@@ -102,14 +109,10 @@ public class WGLContext implements GLContext {
     }
     
     private GLFBConfig choosePixelFormatWGL(GLPlatformConfig ctxconfig, GLFBConfig fbconfig) throws AWTException {
-        int pixelFormat,
-            nativeCount, 
-            usableCount = 0;
-        
         IntBuffer attribs = BufferUtils.createIntBuffer(40);
         IntBuffer values  = BufferUtils.createIntBuffer(40);
     
-        nativeCount = DescribePixelFormat(null, 
+        int nativeCount = DescribePixelFormat(null, 
                 dc, 
                 1, 
                 null);
@@ -151,6 +154,7 @@ public class WGLContext implements GLContext {
                 if (wgl.EXT_colorspace)
                     attribs.put(WGL_COLORSPACE_EXT);
             }
+            attribs.flip();
             
             // NOTE: In a Parallels VM WGL_ARB_pixel_format returns fewer pixel formats than
             //       DescribePixelFormat, violating the guarantees of the extension spec
@@ -158,14 +162,15 @@ public class WGLContext implements GLContext {
             
             try (MemoryStack stack = stackPush()) {
                 IntBuffer extensionCount = stack.callocInt(1);
-                IntBuffer attrib = stack.mallocInt(1);
+                IntBuffer attrib = stack.mallocInt(2);
                 attrib.put(WGL_NUMBER_PIXEL_FORMATS_ARB);
+                attrib.flip();
                 
-                if (!wglGetPixelFormatAttribivARB(dc,
-                                          1, 0, attrib, extensionCount))
+                // HACK: A pointer with a capacity of 2 must be created so that flip() can 
+                //       handle the limit by adding a 0 to the end of the queue.
+                if (!BOOL(nwglGetPixelFormatAttribivARB(dc,
+                                          1, 0, 1, memAddress(attrib), memAddress(extensionCount))))
                 {
-                    memFree(attribs);
-                    memFree(values);
                     throw new AWTException( "WGL: Failed to retrieve pixel format attribute");
                 }
                 
@@ -174,8 +179,9 @@ public class WGLContext implements GLContext {
         }
         
         List<GLFBConfig> usableConfigs = new ArrayList<>();
+        int usableCount = 0,
+            pixelFormat;
         
-            
         for (int i = 0;  i < nativeCount;  i++) {
             GLFBConfig data = new GLFBConfig();
             pixelFormat = i + 1;
@@ -289,145 +295,129 @@ public class WGLContext implements GLContext {
                     data.auxBuffers = pfd.cAuxBuffers();
                     data.stereo = BOOL(pfd.dwFlags() & PFD_STEREO);
                 }
-
-                data.handle = pixelFormat;
-                usableConfigs.add(data);
-                usableCount++;
             }
+            
+            data.handle = pixelFormat;
+            usableConfigs.add(data);
+            usableCount++;
         }
         
         if (!BOOL(usableCount))
         {
-            memFree(attribs);
-            memFree(values);
             throw new AWTException("WGL: The driver does not appear to support OpenGL");
         }
         
         GLFBConfig closest = glGetChooseFBConfig(fbconfig, usableConfigs, usableCount);
         if (closest == null) {
-            memFree(attribs);
-            memFree(values);
             throw new AWTException("WGL: Failed to find a suitable pixel format");
         }
-        
-        memFree(attribs);
-        memFree(values);
         return closest;
     }
     
-    private void createHelperWindow(MemoryStack stack) {
-        helperWindowClass = "AWTAPPWNDCLASS";
-
-        WNDCLASSEX in = WNDCLASSEX
-                .calloc(stack)
-                .cbSize(WNDCLASSEX.SIZEOF)
-                .style(CS_OWNDC)
-                .lpfnWndProc(User32::DefWindowProc)
-                .hInstance(HINSTANCE)
-                .lpszClassName(stack.UTF16(helperWindowClass));
-
-        short helperWindowClas = RegisterClassEx(null, in);
-        if (helperWindowClas == NULL) {
-            throw new IllegalStateException( "Win32: Failed to register helper window class");
-        }
-        
-        helperWindowHandle
-                = CreateWindowEx(null,
-                        WS_EX_APPWINDOW,
-                        helperWindowClass,
-                        "LWJGZ message window",
-                        WS_CLIPSIBLINGS | WS_CLIPCHILDREN,
-                        0, 0, 1, 1,
-                        NULL, NULL,
-                        HINSTANCE,
-                        NULL);
-        
-        if (helperWindowHandle == NULL) {
-            throw new IllegalStateException("Win32: Failed to create helper window");
-        }
-        
-        // HACK: The command to the first ShowWindow call is ignored if the parent
-        //       process passed along a STARTUPINFO, so clear that with a no-op call
-        ShowWindow(helperWindowHandle, SW_HIDE);
-    }
-    
-    private void glTerminateWin32() {
-        if (helperWindowClass != null) {
-            UnregisterClass(null, "AWTAPPWNDCLASS", HINSTANCE);
-        }
-        if (helperWindowHandle != NULL) {
-            DestroyWindow(null, helperWindowHandle);
-        }
-    }
-
     private void initWGL() throws AWTException {
-        long prc, rc;
-        long pdc, dc0;
-    
+        long hdc;
+        
+        short classAtom = 0;
+        long  hwnd      = NULL;
+        long  hglrc     = NULL;
         try (MemoryStack stack = stackPush()) {
-            PIXELFORMATDESCRIPTOR pfd = PIXELFORMATDESCRIPTOR.calloc(stack);
-            createHelperWindow(stack);
+            IntBuffer pi = stack.mallocInt(1);
             
-            dc0 = GetDC(helperWindowHandle);
-            pfd.nSize((short) PIXELFORMATDESCRIPTOR.SIZEOF);
-            pfd.nVersion((short) 1);
-            pfd.dwFlags(PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER);
-            pfd.iPixelType((byte) PFD_TYPE_RGBA);
-            pfd.cColorBits((byte) 24);
+            WNDCLASSEX wc = WNDCLASSEX.calloc(stack)
+                .cbSize(WNDCLASSEX.SIZEOF)
+                .style(CS_HREDRAW | CS_VREDRAW)
+                .hInstance(WindowsLibrary.HINSTANCE)
+                .lpszClassName(stack.UTF16("WGL"));
             
-            if (!SetPixelFormat(null, dc0, ChoosePixelFormat(null, dc0, pfd), pfd))
-            {
-                throw new AWTException("WGL: Failed to set pixel format for dummy context");
+            memPutAddress(
+                wc.address() + WNDCLASSEX.LPFNWNDPROC,
+                User32.Functions.DefWindowProc
+            );
+            
+            classAtom = RegisterClassEx(pi, wc);
+            if (classAtom == 0) {
+                windowsThrowException("WGL: Failed to register WGL window class", pi);
+            }
+            
+            hwnd = nCreateWindowEx(
+                memAddress(pi),
+                0, classAtom & 0xFFFF, NULL,
+                WS_OVERLAPPEDWINDOW | WS_CLIPCHILDREN | WS_CLIPSIBLINGS,
+                0, 0, 1, 1,
+                NULL, NULL, NULL, NULL
+            );
+            
+            if (hwnd == NULL) {
+                windowsThrowException("WGL: Failed to create WGL window", pi);
+            }
+            
+            hdc = check(GetDC(hwnd));
+            
+            PIXELFORMATDESCRIPTOR pfd = PIXELFORMATDESCRIPTOR.calloc(stack)
+                .nSize((short)PIXELFORMATDESCRIPTOR.SIZEOF)
+                .nVersion((short)1)
+                .dwFlags(PFD_DRAW_TO_WINDOW | PFD_SUPPORT_OPENGL | PFD_DOUBLEBUFFER) // we don't care about anything else
+                .iPixelType((byte) PFD_TYPE_RGBA)
+                .cColorBits((byte) 24);
+            
+            int pixelFormat = ChoosePixelFormat(pi, hdc, pfd);
+            if (pixelFormat == 0) {
+                windowsThrowException("WGL: Failed to choose an OpenGL-compatible pixel format", pi);
+            }
+
+            if (DescribePixelFormat(pi, hdc, pixelFormat, pfd) == 0) {
+                windowsThrowException("WGL: Failed to obtain pixel format information", pi);
+            }
+
+            if (!SetPixelFormat(pi, hdc, pixelFormat, pfd)) {
+                windowsThrowException("WGL: Failed to set the pixel format", pi);
+            }
+            
+            hglrc = check(wglCreateContext(null, hdc));
+            if (!wglMakeCurrent(pi, hdc, hglrc)) {
+                windowsThrowException("WGL WGL: Failed to create dummy context", pi);
+            }
+            
+            // NOTE: WGL_ARB_extensions_string and WGL_EXT_extensions_string are not
+            //       checked below as we are already using them
+            wgl.ARB_multisample =
+                extensionSupported("WGL_ARB_multisample");
+            wgl.ARB_framebuffer_sRGB =
+                extensionSupported("WGL_ARB_framebuffer_sRGB");
+            wgl.EXT_framebuffer_sRGB =
+                extensionSupported("WGL_EXT_framebuffer_sRGB");
+            wgl.ARB_create_context =
+                extensionSupported("WGL_ARB_create_context");
+            wgl.ARB_create_context_profile =
+                extensionSupported("WGL_ARB_create_context_profile");
+            wgl.EXT_create_context_es2_profile =
+                extensionSupported("WGL_EXT_create_context_es2_profile");
+            wgl.ARB_create_context_robustness =
+                extensionSupported("WGL_ARB_create_context_robustness");
+            wgl.ARB_create_context_no_error =
+                extensionSupported("WGL_ARB_create_context_no_error");
+            wgl.EXT_swap_control =
+                extensionSupported("WGL_EXT_swap_control");
+            wgl.EXT_colorspace =
+                extensionSupported("WGL_EXT_colorspace");
+            wgl.ARB_pixel_format =
+                extensionSupported("WGL_ARB_pixel_format");
+            wgl.ARB_context_flush_control =
+                extensionSupported("WGL_ARB_context_flush_control");
+        } finally {
+            if (hglrc != NULL) {
+                wglMakeCurrent(null, NULL, NULL);
+                wglDeleteContext(null, hglrc);
+            }
+
+            if (hwnd != NULL) {
+                DestroyWindow(null, hwnd);
+            }
+
+            if (classAtom != 0) {
+                nUnregisterClass(NULL, classAtom & 0xFFFF, WindowsLibrary.HINSTANCE);
             }
         }
-        
-        rc = wglCreateContext(null, dc0);
-        if (rc == NULL)
-        {
-            throw new AWTException("WGL: Failed to create dummy context");
-        }
-        
-        pdc = wglGetCurrentDC();
-        prc = wglGetCurrentContext(null);
-        
-        if (!wglMakeCurrent(null, dc0, rc))
-        {
-            wglMakeCurrent(null, pdc, prc);
-            wglDeleteContext(null, rc);
-            ReleaseDC(helperWindowHandle, dc0);
-            throw new AWTException("WGL: Failed to make dummy context current");
-        }
-        
-        // NOTE: WGL_ARB_extensions_string and WGL_EXT_extensions_string are not
-        //       checked below as we are already using them
-        wgl.ARB_multisample =
-            extensionSupported("WGL_ARB_multisample");
-        wgl.ARB_framebuffer_sRGB =
-            extensionSupported("WGL_ARB_framebuffer_sRGB");
-        wgl.EXT_framebuffer_sRGB =
-            extensionSupported("WGL_EXT_framebuffer_sRGB");
-        wgl.ARB_create_context =
-            extensionSupported("WGL_ARB_create_context");
-        wgl.ARB_create_context_profile =
-            extensionSupported("WGL_ARB_create_context_profile");
-        wgl.EXT_create_context_es2_profile =
-            extensionSupported("WGL_EXT_create_context_es2_profile");
-        wgl.ARB_create_context_robustness =
-            extensionSupported("WGL_ARB_create_context_robustness");
-        wgl.ARB_create_context_no_error =
-            extensionSupported("WGL_ARB_create_context_no_error");
-        wgl.EXT_swap_control =
-            extensionSupported("WGL_EXT_swap_control");
-        wgl.EXT_colorspace =
-            extensionSupported("WGL_EXT_colorspace");
-        wgl.ARB_pixel_format =
-            extensionSupported("WGL_ARB_pixel_format");
-        wgl.ARB_context_flush_control =
-            extensionSupported("WGL_ARB_context_flush_control");
-        
-        wglMakeCurrent(null, pdc, prc);
-        wglDeleteContext(null, rc);
-        ReleaseDC(helperWindowHandle, dc0);
     }
     
     @Override
@@ -609,8 +599,6 @@ public class WGLContext implements GLContext {
                 }
             }
         }
-                
-        memFree(attribs);
     }
 
     @Override
@@ -646,9 +634,9 @@ public class WGLContext implements GLContext {
     public boolean extensionSupported(String extension) {
         String extensions = null;
         
-        if (wgl.GetExtensionsStringARB) {
+        if (BOOL(Functions.GetExtensionsStringARB)) {
             extensions = wglGetExtensionsStringARB(wglGetCurrentDC());
-        } else if (wgl.GetExtensionsStringEXT) {
+        } else if (BOOL(Functions.GetExtensionsStringEXT)) {
             extensions = wglGetExtensionsStringEXT();
         }
         
@@ -681,6 +669,5 @@ public class WGLContext implements GLContext {
         if (dc != NULL) {
             ReleaseDC(platform.getHWND(), dc);
         }
-        glTerminateWin32();
     }
 }

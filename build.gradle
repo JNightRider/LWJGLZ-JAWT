@@ -42,6 +42,8 @@ subprojects {
         runtimeOnly(variantOf(libs.lwjgl3.vma) { classifier('natives-macos') })
         runtimeOnly(variantOf(libs.lwjgl3.vma) { classifier('natives-macos-arm64') })
 
+        implementation libs.joml.core
+        implementation libs.joml.primitivesn
 
         testImplementation(libs.junit.jupiter) // Use JUnit Jupiter for testing.
         testRuntimeOnly(libs.junit.platform)

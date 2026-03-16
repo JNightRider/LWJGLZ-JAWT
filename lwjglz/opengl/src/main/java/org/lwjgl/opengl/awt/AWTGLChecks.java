@@ -32,7 +32,7 @@ public class AWTGLChecks {
         if (platform == null)
             throw new NullPointerException();
         
-        if (! (platform instanceof X11Platform)) {
+        if (! (platform instanceof Win32Platform)) {
             throwPlatform("Windows");
         }
     }

@@ -79,8 +79,30 @@ public class AWTGLCanvas extends Canvas {
     @Override
     public void removeNotify() {
         synchronized (SYNC_LOCK) {
-            destroy();
-            super.removeNotify();
+            try {
+                platform.lock();
+                try {
+                    context.makeContextCurrent(false);                    
+                    if (context != null) {
+                        context.destroy();
+                        context = null;
+                        createdContext.set(false);
+                    }
+                } finally {
+                    platform.unlock();
+                    
+                }
+                if (platform != null) {
+                    platform.dispose();
+                    platform = null;
+                    createdPlatform.set(false);
+                }
+                firstRun.set(true);
+            } catch (AWTException e) {
+                throw new RuntimeException("Exception while creating the OpenGL context", e);
+            } finally {
+                super.removeNotify();
+            }
         }
     }
 
@@ -161,16 +183,26 @@ public class AWTGLCanvas extends Canvas {
      */
     public final void destroy() {
         synchronized (SYNC_LOCK) {
-            firstRun.set(true);
-            if (context != null) {
-                context.destroy();
-                context = null;
-                createdContext.set(false);
-            }
-            if (platform != null) {
-                platform.dispose();
-                platform = null;
-                createdPlatform.set(false);
+            try {
+                platform.lock();
+                try {
+                    context.makeContextCurrent(false);                    
+                    if (context != null) {
+                        context.destroy();
+                        context = null;
+                        createdContext.set(false);
+                    }
+                    if (platform != null) {
+                        platform.dispose();
+                        platform = null;
+                        createdPlatform.set(false);
+                    }
+                } finally {
+                    platform.unlock();
+                }
+                firstRun.set(true);
+            } catch (AWTException e) {
+                throw new RuntimeException("Exception while creating the OpenGL context", e);
             }
         }
     }

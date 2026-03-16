@@ -515,6 +515,5 @@ public class EGLContext implements GLContext {
             eglTerminate(display);
             display = EGL_NO_DISPLAY;
         }
-        glTerminateEGL();
     }
 }
