@@ -8,7 +8,7 @@ package org.lwjgl.opengl.awt;
  *
  * @author wil
  */
-class FrameBufferConfig {
+class GLFBConfig {
     int      redBits         = 8;
     int      greenBits       = 8;
     int      blueBits        = 8;

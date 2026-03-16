@@ -167,7 +167,7 @@ public class GLXContext implements GLContext {
         }
     }
     
-    private FrameBufferConfig chooseGLXFBConfig(FrameBufferConfig desired) throws AWTException {
+    private GLFBConfig chooseGLXFBConfig(GLFBConfig desired) throws AWTException {
         // HACK: This is a (hopefully temporary) workaround for Chromium
         //       (VirtualBox GL) not setting the window bit on any GLXFBConfigs
         boolean trustWindowBit = true;
@@ -180,12 +180,12 @@ public class GLXContext implements GLContext {
             throw new AWTException("GLX: No GLXFBConfigs returned");
         }
         
-        List<FrameBufferConfig> usableConfigs = new ArrayList<>();
+        List<GLFBConfig> usableConfigs = new ArrayList<>();
         int usableCount = 0;
         
         for (int i = 0; i < nativeConfigs.remaining(); i++) {
             long /*GLXFBConfig*/ config = nativeConfigs.get(i);
-            FrameBufferConfig data = new FrameBufferConfig();
+            GLFBConfig data = new GLFBConfig();
             
             // Only consider RGBA GLXFBConfigs
             if (!((getGLXFBConfigAttrib(config, GLX_RENDER_TYPE) & GLX_RGBA_BIT) > 0))
@@ -228,7 +228,7 @@ public class GLXContext implements GLContext {
             usableConfigs.add(data);
         }
         
-        FrameBufferConfig result = glGetChooseFBConfig(desired, usableConfigs, usableCount);
+        GLFBConfig result = glGetChooseFBConfig(desired, usableConfigs, usableCount);
         XFree(nativeConfigs);
         return result;
     }
@@ -251,7 +251,7 @@ public class GLXContext implements GLContext {
         
         GLData gldata = platform.getGLData();
         GLPlatformConfig ctxconfig = gldata.getPlatformConfig();
-        FrameBufferConfig fbconfig = gldata.getFBConfig();
+        GLFBConfig fbconfig = gldata.getFBConfig();
         
         IntBuffer attribs = BufferUtils.createIntBuffer(40);
         long share = NULL;
@@ -260,7 +260,7 @@ public class GLXContext implements GLContext {
             share = ctxconfig.share;
         }
         
-        FrameBufferConfig _native = chooseGLXFBConfig(fbconfig);
+        GLFBConfig _native = chooseGLXFBConfig(fbconfig);
         if (_native == null) {
             throw new AWTException("GLX: Failed to find a suitable GLXFBConfig");
         }

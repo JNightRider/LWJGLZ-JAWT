@@ -117,14 +117,14 @@ public final class AWTGL {
         return false;
     }
     
-    public static FrameBufferConfig glGetChooseFBConfig(FrameBufferConfig desired, List<FrameBufferConfig> alternatives, int count) {
+    public static GLFBConfig glGetChooseFBConfig(GLFBConfig desired, List<GLFBConfig> alternatives, int count) {
         int i;
         long missing,   leastMissing   = UINT_MAX;
         long colorDiff, leastColorDiff = UINT_MAX;
         long extraDiff, leastExtraDiff = UINT_MAX;
         
-        FrameBufferConfig current;
-        FrameBufferConfig closest = null;
+        GLFBConfig current;
+        GLFBConfig closest = null;
     
         for (i = 0; i < count; i++) {
             current = alternatives.get(i);
