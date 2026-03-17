@@ -26,5 +26,4 @@ So far, they have been implemented for the following platforms and renderers
 |------------------|-------------|--------|--------|
 | Linux            | In progress | S      | n      |
 | Windows          | In progress | S      | n      |
-| MaxOs            | -           | n      | n      |
-
+| macOS            | -           | n      | n      |
