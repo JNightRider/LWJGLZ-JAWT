@@ -470,6 +470,16 @@ public class EGLContext implements GLContext {
 
     @Override
     public void swapBuffers() {
+        if (display == EGL_NO_DISPLAY) {
+            System.out.println("swapBuffers: EGL_NO_DISPLAY");
+            return;
+        }
+
+        if (surface == EGL_NO_SURFACE){
+            System.out.println("swapBuffers: EGL_NO_SURFACE");
+            return;
+        }
+        
         eglSwapBuffers(display, surface);
     }
 
@@ -506,12 +516,15 @@ public class EGLContext implements GLContext {
 
     @Override
     public void destroy() {
-        if (surface != NULL) {
-            eglDestroySurface(display, surface);
-            surface = EGL_NO_SURFACE;
-        }
         if (display != NULL) {
-            eglDestroyContext(display, context);
+            if (context != NULL) {
+                eglDestroyContext(display, context);
+                context = EGL_NO_CONTEXT;
+            }
+            if (surface != NULL) {
+                eglDestroySurface(display, surface);
+                surface = EGL_NO_SURFACE;
+            }
             eglTerminate(display);
             display = EGL_NO_DISPLAY;
         }

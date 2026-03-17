@@ -13,3 +13,8 @@ dependencies {
     api project(':lwjglz:opengl')
     api project(':lwjglz:vulkan')
 }
+
+application {
+    mainClass = 'org.lwjgl.awt.TriangleOpengl'
+}
+

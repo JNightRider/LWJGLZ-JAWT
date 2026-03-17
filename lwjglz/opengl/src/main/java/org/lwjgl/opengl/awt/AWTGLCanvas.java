@@ -14,6 +14,8 @@ import java.awt.event.ComponentListener;
 import java.awt.geom.AffineTransform;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import org.lwjgl.opengl.GL;
+import org.lwjgl.opengl.GLCapabilities;
 
 import static org.lwjgl.opengl.awt.AWTGL.*;
 import static org.lwjgl.system.MemoryUtil.*;
@@ -34,6 +36,8 @@ public class AWTGLCanvas extends Canvas {
      * Tracks whether initGL() needs to be called
      */    
     private final AtomicBoolean firstRun = new AtomicBoolean(true);
+    private final AtomicBoolean destroying = new AtomicBoolean(false);
+    
     private final AtomicBoolean createdPlatform = new AtomicBoolean(false);
     private final AtomicBoolean createdContext  = new AtomicBoolean(false);
     
@@ -77,33 +81,20 @@ public class AWTGLCanvas extends Canvas {
     }
     
     @Override
-    public void removeNotify() {
+    public void addNotify() {
+        super.addNotify();
         synchronized (SYNC_LOCK) {
-            try {
-                platform.lock();
-                try {
-                    context.makeContextCurrent(false);                    
-                    if (context != null) {
-                        context.destroy();
-                        context = null;
-                        createdContext.set(false);
-                    }
-                } finally {
-                    platform.unlock();
-                    
-                }
-                if (platform != null) {
-                    platform.dispose();
-                    platform = null;
-                    createdPlatform.set(false);
-                }
-                firstRun.set(true);
-            } catch (AWTException e) {
-                throw new RuntimeException("Exception while creating the OpenGL context", e);
-            } finally {
-                super.removeNotify();
-            }
+            destroying.set(false);
         }
+        requestFocusInWindow();
+    }
+    
+    @Override
+    public void removeNotify() {
+        if (context != null && platform != null) {
+            destroying.set(true);
+        }
+        super.removeNotify();
     }
 
     /**
@@ -177,35 +168,39 @@ public class AWTGLCanvas extends Canvas {
         }
     }
     
-    /**
-     * Destroy the OpenGL context. This happens when the component becomes
-     * undisplayable
-     */
-    public final void destroy() {
-        synchronized (SYNC_LOCK) {
-            try {
-                platform.lock();
-                try {
-                    context.makeContextCurrent(false);                    
-                    if (context != null) {
-                        context.destroy();
-                        context = null;
-                        createdContext.set(false);
-                    }
-                    if (platform != null) {
-                        platform.dispose();
-                        platform = null;
-                        createdPlatform.set(false);
-                    }
-                } finally {
-                    platform.unlock();
-                }
-                firstRun.set(true);
-            } catch (AWTException e) {
-                throw new RuntimeException("Exception while creating the OpenGL context", e);
-            }
-        }
-    }
+//    /**
+//     * Destroy the OpenGL context. This happens when the component becomes
+//     * undisplayable
+//     */
+//    public final void destroy() {
+//        destroying.set(true);
+//        synchronized (SYNC_LOCK) {
+//            try {
+//                platform.lock();
+//                try {
+//                    if (context != null) {
+//                        if (context.getHandle() == context.getCurrentContext()) {
+//                            context.makeContextCurrent(false);
+//                        }
+//                        
+//                        context.destroy();
+//                        context = null;
+//                        createdContext.set(false);
+//                    }
+//                } finally {
+//                    platform.unlock();
+//                }
+//                if (platform != null) {
+//                    platform.dispose();
+//                    platform = null;
+//                    createdPlatform.set(false);
+//                }
+//                firstRun.set(true);
+//            } catch (AWTException e) {
+//                throw new RuntimeException("Exception while creating the OpenGL context", e);
+//            }
+//        }
+//    }
     
     /**
      * Override this to do initialising of the context. It will be called once
@@ -226,7 +221,7 @@ public class AWTGLCanvas extends Canvas {
      */
     public final void render() {
         synchronized (SYNC_LOCK) {
-            if (!isDisplayable()) {
+            if (!isDisplayable() && !destroying.get()) {
                 return;
             }
             try {

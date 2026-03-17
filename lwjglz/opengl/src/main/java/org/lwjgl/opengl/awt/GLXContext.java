@@ -474,6 +474,7 @@ public class GLXContext implements GLContext {
     public void destroy() {
         if (platform != null && context != NULL) {
             glXDestroyContext(platform.getDisplay(), context);
+            context = NULL;
         }
     }
 }

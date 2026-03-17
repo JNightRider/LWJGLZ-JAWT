@@ -5,7 +5,6 @@
 package org.lwjgl.awt;
 
 import java.awt.*;
-import java.awt.event.*;
 import javax.swing.*;
 
 import org.lwjgl.opengl.awt.*;
@@ -14,7 +13,6 @@ import org.lwjgl.system.*;
 
 import java.nio.*;
 import org.joml.Matrix4f;
-import org.joml.Quaternionf;
 
 import static org.lwjgl.opengl.awt.AWTGL.*;
 import static org.lwjgl.opengl.awt.GLData.*;
@@ -69,9 +67,9 @@ public class TriangleOpengl {
     private int mvp_location;
     
     private AWTGLCanvas canvas;
-    long lastTime = System.nanoTime();
+    long lastTime = System.nanoTime();    
    
-    private void init() {
+    public void init() {
         GLCapabilities caps = GL.createCapabilities();
         if (!caps.OpenGL33) {
             throw new IllegalStateException("This demo requires OpenGL 3.3 or higher.");
@@ -113,7 +111,7 @@ public class TriangleOpengl {
                               6 * Float.BYTES, 3 * Float.BYTES);
     }
 
-    private void loop() {
+    public void loop() {
         
         int width  = canvas.getFramebufferWidth(),
             height = canvas.getFramebufferHeight();
@@ -153,7 +151,6 @@ public class TriangleOpengl {
         gldata.glHint(GLDATA_CONTEXT_VERSION_MAJOR, 3);
         gldata.glHint(GLDATA_CONTEXT_VERSION_MINOR, 3);
         gldata.glHint(GLDATA_OPENGL_PROFILE, AWT_OPENGL_CORE_PROFILE);
-        //gldata.glHint(GLDATA_CONTEXT_CREATION_API, AWT_NATIVE_CONTEXT_API);
         
         {
             canvas = new AWTGLCanvas(gldata) {
@@ -166,39 +163,27 @@ public class TriangleOpengl {
                 protected void paintGL() {
                     loop();
                     swapBuffers();
-                    Toolkit.getDefaultToolkit().sync();
                 }
             };
         }
         {
-            JFrame window = new JFrame();
+            final JFrame window = new JFrame();
             window.setTitle("OpenGL Triangle");
             window.setDefaultCloseOperation(JFrame.DISPOSE_ON_CLOSE);
             window.setLayout(new BorderLayout());
             window.setPreferredSize(new Dimension(640, 480));
             
             window.add(canvas);
-            window.addWindowListener(new WindowAdapter() {
-                @Override
-                public void windowClosing(WindowEvent e) {
-                    destroy();
-                }
-            });
             
             window.pack();
             window.setVisible(true);
             window.transferFocus();
+            
         }
     }
     
-    private void destroy() {
-        glDeleteProgram(program);
-        glDeleteBuffers(vertex_buffer);
-        glDeleteVertexArrays(vertex_array);
-    }
-    
     public static void main(String[] args) {
-        Configuration.OPENGL_CONTEXT_API.set("native");
+        /*Configuration.OPENGL_CONTEXT_API.set("native");*/
         new TriangleOpengl().run();
     }
 
