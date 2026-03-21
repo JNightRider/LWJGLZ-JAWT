@@ -195,17 +195,13 @@ public class WGLContext implements GLContext {
                 // Get pixel format attributes through "modern" extension
 
                 if (!wglGetPixelFormatAttribivARB(dc,
-                                                  pixelFormat, 0,
-                                                  attribs, values))
-                {
-                    memFree(attribs);
-                    memFree(values);
+                        pixelFormat, 0,
+                        attribs, values)) {
                     throw new AWTException("WGL: Failed to retrieve pixel format attributes");
                 }
 
                 if (!findBoolPixelFormatAttribValueWGL(attribs, values, WGL_SUPPORT_OPENGL_ARB) ||
-                    !findBoolPixelFormatAttribValueWGL(attribs, values, WGL_DRAW_TO_WINDOW_ARB))
-                {
+                    !findBoolPixelFormatAttribValueWGL(attribs, values, WGL_DRAW_TO_WINDOW_ARB)) {
                     continue;
                 }
 
@@ -260,8 +256,6 @@ public class WGLContext implements GLContext {
                                              pixelFormat,
                                              pfd)))
                     {
-                        memFree(attribs);
-                        memFree(values);
                         throw new AWTException("WGL: Failed to describe pixel format");
                     }
 
