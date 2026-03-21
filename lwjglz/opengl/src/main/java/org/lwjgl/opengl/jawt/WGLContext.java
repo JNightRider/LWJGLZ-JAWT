@@ -605,7 +605,7 @@ public class WGLContext implements GLContext {
     }
 
     @Override
-    public void releaseContext() {
+    public void releaseCurrent() {
         if (!wglMakeCurrent(null, NULL, NULL)) {
             throw new IllegalStateException("WGL: Failed to clear current context");
         }

@@ -18,7 +18,7 @@ public interface GLContext {
     
     void makeCurrent();
     
-    void releaseContext();
+    void releaseCurrent();
 
     void swapBuffers();
     

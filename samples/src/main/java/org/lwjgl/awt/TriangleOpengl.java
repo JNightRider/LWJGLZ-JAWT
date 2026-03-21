@@ -5,17 +5,20 @@
 package org.lwjgl.awt;
 
 import java.awt.*;
+import java.awt.event.KeyEvent;
+import java.awt.event.WindowAdapter;
+import java.awt.event.WindowEvent;
 import javax.swing.*;
 
-import org.lwjgl.opengl.awt.*;
+import org.lwjgl.opengl.jawt.*;
 import org.lwjgl.opengl.*;
 import org.lwjgl.system.*;
 
 import java.nio.*;
 import org.joml.Matrix4f;
 
-import static org.lwjgl.opengl.awt.AWTGL.*;
-import static org.lwjgl.opengl.awt.GLData.*;
+import static org.lwjgl.opengl.jawt.AWTGL.*;
+import static org.lwjgl.opengl.jawt.GLData.*;
 import static org.lwjgl.opengl.GL30C.*;
 import static org.lwjgl.system.MemoryStack.*;
 
@@ -162,9 +165,9 @@ public class TriangleOpengl {
                 @Override
                 protected void paintGL() {
                     loop();
-                    swapBuffers();
                 }
             };
+            canvas.setIgnoreRepaint(true);
         }
         {
             final JFrame window = new JFrame();
@@ -173,12 +176,42 @@ public class TriangleOpengl {
             window.setLayout(new BorderLayout());
             window.setPreferredSize(new Dimension(640, 480));
             
-            window.add(canvas);
+            window.addWindowListener(new WindowAdapter() {
+                @Override
+                public void windowClosed(WindowEvent e) {
+                    canvas.destroy();
+                }
+            });
             
+            window.add(canvas);            
             window.pack();
-            window.setVisible(true);
-            window.transferFocus();
             
+            KeyboardFocusManager.getCurrentKeyboardFocusManager().addKeyEventDispatcher(e -> {
+            if (e.getKeyCode() == KeyEvent.VK_ESCAPE && e.getID() == KeyEvent.KEY_PRESSED) {
+                window.dispose();
+                return true;
+            }
+
+            return false;
+        });
+            
+            EventQueue.invokeLater(() -> {
+                window.setVisible(true);
+                window.transferFocus();
+                
+                Runnable renderLoop = new Runnable() {
+                    @Override
+                    public void run() {
+                        if (!canvas.isValid()) {
+                            GL.setCapabilities(null);
+                            return;
+                        }
+                        canvas.render();
+                        SwingUtilities.invokeLater(this);
+                    }
+                };
+                SwingUtilities.invokeLater(renderLoop);
+            });
         }
     }
     

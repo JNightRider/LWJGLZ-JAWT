@@ -403,7 +403,7 @@ public class GLXContext implements GLContext {
     }
 
     @Override
-    public void releaseContext() {
+    public void releaseCurrent() {
         if (!glXMakeCurrent(window.getDisplay(), NULL, NULL)) {
             throw new IllegalStateException("GLX: Failed to clear current context");
         }

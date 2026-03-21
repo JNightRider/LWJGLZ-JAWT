@@ -24,5 +24,6 @@ class GLFBConfig {
     int      samples;
     boolean  sRGB;
     boolean  doublebuffer    = true;
+    boolean  transparent;
     long     handle;
 }

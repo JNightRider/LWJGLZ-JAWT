@@ -57,7 +57,7 @@ public class NSGLContext implements GLContext {
     }
 
     @Override
-    public void releaseContext() {
+    public void releaseCurrent() {
         throw new UnsupportedOperationException("Not supported yet."); // Generated from nbfs://nbhost/SystemFileSystem/Templates/Classes/Code/GeneratedMethodBody
     }
 

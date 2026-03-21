@@ -6,8 +6,9 @@ package org.lwjgl.opengl.jawt;
 
 import java.util.List;
 
-
+import org.lwjgl.system.Platform;
 import static org.lwjgl.awt.AWT.*;
+import static org.lwjgl.system.Configuration.*;
 
 /**
  *
@@ -37,6 +38,34 @@ public final class AWTGL {
             AWT_ANY_RELEASE_BEHAVIOR   = 0,
             AWT_RELEASE_BEHAVIOR_FLUSH = 1,
             AWT_RELEASE_BEHAVIOR_NONE  = 2;
+    
+    public static Window glGetAttachWindow() {
+        switch (Platform.get()) {
+            case FREEBSD, LINUX -> { return new X11Window();    }
+            case WINDOWS        -> { return new Win32Window();  }
+            case MACOSX         -> { return new CocoaWindow();  }
+            default -> throw new UnsupportedOperationException("Platform " + Platform.get() + " not yet supported");
+        }
+    }
+    
+    public static GLContext glNewAttachContext(Window window, GLData data, long share) {
+        data.getPlatformConfig()
+            .share = share;
+        
+        if (window instanceof X11Window x11) {
+            if (isWayland() && !"native".equals(OPENGL_CONTEXT_API.get())) {
+                return new EGLContext(x11, data);
+            }
+            return new GLXContext(x11, data);
+        }
+        else if (window instanceof Win32Window w32) {
+            return new WGLContext(w32, data);
+        }
+        else if (window instanceof CocoaWindow cco) {
+            return new NSGLContext(cco, data);
+        }
+        throw new UnsupportedOperationException("Platform " + Platform.get() + " not yet supported");
+    }
     
     public static boolean glStringInExtensionString(String extension, String extensions) {
         String[] _extensions = extensions.split(" ");

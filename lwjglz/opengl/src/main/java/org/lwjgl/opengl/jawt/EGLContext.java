@@ -1,8 +1,8 @@
 /*
- * Copyright LWJGLZ. All rights reserved.
+ * Copyright lwjglz-jawt. All rights reserved.
  * License terms: https://opensource.org/license/BSD-3-clause
  */
-package org.lwjgl.opengl.awt;
+package org.lwjgl.opengl.jawt;
 
 import java.awt.AWTException;
 
@@ -25,7 +25,7 @@ import static org.lwjgl.egl.KHRCreateContextNoError.*;
 import static org.lwjgl.egl.KHRGLColorspace.*;
 
 import static org.lwjgl.awt.AWT.*;
-import static org.lwjgl.opengl.awt.AWTGL.*;
+import static org.lwjgl.opengl.jawt.AWTGL.*;
 
 import static org.lwjgl.system.APIUtil.*;
 import static org.lwjgl.system.MemoryStack.*;
@@ -37,10 +37,12 @@ import static org.lwjgl.system.MemoryUtil.*;
  */
 public class EGLContext implements GLContext {
     
-    public static class Extensions {
+    /** It contains all the extensions available to create the context from {@code extensionSupported()}. */
+    public static class WLCapabilities {
+        /** private constructor */
+        private WLCapabilities() {}
         
-        private Extensions() {}
-        
+        /** Available extensions */
         public Boolean 
                 KHR_get_all_proc_addresses      = Boolean.FALSE,
                 EXT_client_extensions           = Boolean.FALSE,
@@ -60,17 +62,19 @@ public class EGLContext implements GLContext {
                 EXT_present_opaque              = Boolean.FALSE;
     }
     
-    private final GLPlatform platform;
-    private final Extensions egl;
+    private final X11Window window;
+    private final WLCapabilities egl;
     
+    private final GLData gldata;
     private long context;
     
     private long display;
     private long surface;
 
-    public EGLContext(GLPlatform platform) {
-        this.platform = platform;
-        this.egl = new Extensions();
+    public EGLContext(X11Window window, GLData data) {
+        this.egl    = new WLCapabilities();
+        this.window = window;
+        this.gldata = data;
     }
     
     // Return a description of the specified EGL error
@@ -191,9 +195,6 @@ public class EGLContext implements GLContext {
         }
         
         GLFBConfig result = glGetChooseFBConfig(fbconfig, usableConfigs, usableCount);
-        memFree(nativeCount);
-        memFree(nativeConfigs);
-        
         if (result == null) {
             if (wrongApiAvailable)
             {
@@ -225,7 +226,8 @@ public class EGLContext implements GLContext {
         }
     }
     
-    private void initEGL() throws AWTException {
+    @Override
+    public void initGL() throws AWTException {
         String extensions = eglQueryString(EGL_NO_DISPLAY, EGL_EXTENSIONS);
         if ((extensions != null && !extensions.isEmpty()) && eglGetError() == EGL_SUCCESS)
             egl.EXT_client_extensions = true;
@@ -251,7 +253,7 @@ public class EGLContext implements GLContext {
                 glStringInExtensionString("EGL_MESA_platform_surfaceless", extensions);
         }
         
-        display = eglGetDisplay(platform.getNativeDisplay());
+        display = eglGetDisplay(window.getDisplay());
         if (display == EGL_NO_DISPLAY) {
             glTerminateEGL();
             throw new IllegalStateException("EGL: Failed to get EGL display: %ss"
@@ -284,10 +286,7 @@ public class EGLContext implements GLContext {
     }
     
     @Override
-    public void createContext() throws AWTException {
-        initEGL();
-        
-        GLData gldata = platform.getGLData();
+    public void create() throws AWTException {        
         GLPlatformConfig ctxconfig = gldata.getPlatformConfig();
         GLFBConfig fbconfig = gldata.getFBConfig();
         
@@ -427,7 +426,7 @@ public class EGLContext implements GLContext {
         attribs.put(EGL_NONE);
         attribs.flip();
         
-        long _native = platform.getNativeWindow();
+        long _native = window.getDrawable();
         // HACK: Use a non-platform function for all, as 
         //       eglCreatePlatformWindowSurfaceEXT does not work with AWT 
         //       despite stating that it supports EGL_EXT_platform_base.
@@ -438,48 +437,32 @@ public class EGLContext implements GLContext {
             throw new IllegalStateException("EGL: Failed to create window surface: %s"
                         .formatted(getEGLErrorString(eglGetError())));
         }
-        
-        memFree(attribs);
     }
 
     @Override
-    public void makeContextCurrent(boolean handle) {
-        if (handle) {
-            if(!eglMakeCurrent(display, 
-                    surface, 
-                    surface, 
-                    context)) {
-                throw new IllegalStateException("EGL: Failed to make context current: %s"
-                        .formatted(getEGLErrorString(eglGetError())));
-            }
-        } else {
-            if (!eglMakeCurrent(display, 
-                    EGL_NO_SURFACE, 
-                    EGL_NO_SURFACE, 
-                    EGL_NO_CONTEXT)) {
-                throw new IllegalStateException("EGL: Failed to clear current context: %s"
-                        .formatted(getEGLErrorString(eglGetError())));
-            }
+    public void makeCurrent() {
+        if (!eglMakeCurrent(display,
+                surface,
+                surface,
+                context)) {
+            throw new IllegalStateException("EGL: Failed to make context current: %s"
+                    .formatted(getEGLErrorString(eglGetError())));
         }
     }
 
     @Override
-    public long getCurrentContext() {
-        return eglGetCurrentContext();
+    public void releaseCurrent() {
+        if (!eglMakeCurrent(display,
+                EGL_NO_SURFACE,
+                EGL_NO_SURFACE,
+                EGL_NO_CONTEXT)) {
+            throw new IllegalStateException("EGL: Failed to clear current context: %s"
+                    .formatted(getEGLErrorString(eglGetError())));
+        }
     }
 
     @Override
     public void swapBuffers() {
-        if (display == EGL_NO_DISPLAY) {
-            System.out.println("swapBuffers: EGL_NO_DISPLAY");
-            return;
-        }
-
-        if (surface == EGL_NO_SURFACE){
-            System.out.println("swapBuffers: EGL_NO_SURFACE");
-            return;
-        }
-        
         eglSwapBuffers(display, surface);
     }
 
@@ -510,12 +493,22 @@ public class EGLContext implements GLContext {
     }
 
     @Override
-    public long getHandle() {
+    public long getCurrentContext() {
+        return eglGetCurrentContext();
+    }
+
+    @Override
+    public long getContext() {
         return context;
     }
 
     @Override
-    public void destroy() {
+    public boolean isCurrent() {
+        return context == getCurrentContext();
+    }
+
+    @Override
+    public void delete() {
         if (display != NULL) {
             if (context != NULL) {
                 eglDestroyContext(display, context);
@@ -528,5 +521,5 @@ public class EGLContext implements GLContext {
             eglTerminate(display);
             display = EGL_NO_DISPLAY;
         }
-    }
+    }    
 }

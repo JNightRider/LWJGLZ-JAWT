@@ -2,6 +2,7 @@ package org.lwjgl.awt;
 
 import java.awt.BorderLayout;
 import java.awt.Canvas;
+import java.awt.Dimension;
 import java.awt.EventQueue;
 import java.awt.KeyboardFocusManager;
 import java.awt.event.ActionEvent;
@@ -21,7 +22,7 @@ import org.lwjgl.system.Configuration;
 
 public class Main {
     public static void main(String[] args) {
-        Configuration.OPENGL_CONTEXT_API.set("native");
+        //Configuration.OPENGL_CONTEXT_API.set("native");
         
         AWTGLCanvas canvas = new AWTGLCanvas(){
             @Override
@@ -32,8 +33,8 @@ public class Main {
 
             @Override
             protected void paintGL() {
-                int w = getWidth();
-                int h = getHeight();
+                int w = getFramebufferWidth();
+                int h = getFramebufferHeight();
                 float aspect = (float) w / h;
                 double now = System.currentTimeMillis() * 0.001;
                 float width = (float) Math.abs(Math.sin(now * 0.3));
@@ -48,7 +49,7 @@ public class Main {
                 glEnd();
             }
         };
-        canvas.setSize(640, 480);
+        canvas.setPreferredSize(new Dimension(640, 480));
         canvas.setIgnoreRepaint(true);
 
         JPanel options = new JPanel();
@@ -82,12 +83,9 @@ public class Main {
         });
         JButton remove = new JButton("remove");
         remove.addActionListener((ActionEvent ae) -> {
-            canvas.getContext().delete();
+            //canvas.destroyContext();
             frame.remove(canvas);
-            canvas.getWindows().dispose();
-            
-            canvas.setContext(null);
-            canvas.setWindows(null);
+            canvas.destroy();
         });
         
         
@@ -110,9 +108,7 @@ public class Main {
     private static void runGL(final AWTGLCanvas canvas) {
         Runnable renderLoop = new Runnable() {
             @Override
-            public void run() {
-                System.out.println(canvas.isValid());
-                
+            public void run() {                
                 if (!canvas.isValid()) {
                     GL.setCapabilities(null);
                     return;
@@ -122,6 +118,5 @@ public class Main {
             }
         };
         SwingUtilities.invokeLater(renderLoop);
-        System.out.println("org.lwjgl.awt.Main.runGL()");
     }
 }
