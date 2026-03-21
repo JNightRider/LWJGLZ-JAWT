@@ -146,32 +146,34 @@ public class AWTGLCanvas extends Canvas {
     public void paint(Graphics g) { }
     
     public void render() {
-        try {
-            if (window == null) {
-                window = glGetAttachWindow();
-                window.create(this);
-            }            
-            window.lock();
+        synchronized (SYNC_LOCK) {
             try {
-                if (context == null) {
-                    context = glNewAttachContext(window, data, NULL);
-                    context.initGL();
-                    context.create();
-                    context.makeCurrent();
-                    initGL();
-                } else {
-                    context.makeCurrent();
+                if (window == null) {
+                    window = glGetAttachWindow();
+                    window.create(this);
+                }            
+                window.lock();
+                try {
+                    if (context == null) {
+                        context = glNewAttachContext(window, data, NULL);
+                        context.initGL();
+                        context.create();
+                        context.makeCurrent();
+                        initGL();
+                    } else {
+                        context.makeCurrent();
+                    }
+
+                    paintGL();
+
+                    context.swapBuffers();
+                    context.releaseCurrent();                
+                } finally {
+                    window.unlock();
                 }
-                
-                paintGL();
-                
-                context.swapBuffers();
-                context.releaseCurrent();                
-            } finally {
-                window.unlock();
+            } catch (AWTException e) {
+                throw new RuntimeException(e);
             }
-        } catch (AWTException e) {
-            throw new RuntimeException(e);
         }
     }
     
@@ -210,5 +212,13 @@ public class AWTGLCanvas extends Canvas {
             window.dispose();
         }
         window = null;
+    }
+
+    public Window getWindow() {
+        return window;
+    }
+
+    public GLContext getContext() {
+        return context;
     }
 }
