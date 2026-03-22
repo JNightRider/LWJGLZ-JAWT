@@ -26,6 +26,10 @@ import static org.lwjgl.egl.KHRGLColorspace.*;
 
 import static org.lwjgl.awt.AWT.*;
 import static org.lwjgl.opengl.jawt.AWTGL.*;
+import static org.lwjgl.opengl.jawt.AWTGL.GLClientAPI.*;
+import static org.lwjgl.opengl.jawt.AWTGL.GLProfile.*;
+import static org.lwjgl.opengl.jawt.AWTGL.GLReleaseBehavior.*;
+import static org.lwjgl.opengl.jawt.AWTGL.GLRobustness.*;
 
 import static org.lwjgl.system.APIUtil.*;
 import static org.lwjgl.system.MemoryStack.*;
@@ -110,13 +114,13 @@ public class EGLContext implements GLContext {
         }
     }
 
-    private GLFBConfig chooseEGLConfig(GLPlatformConfig ctxconfig, GLFBConfig fbconfig) throws AWTException {
+    private GLFBDescriptor chooseEGLConfig(GLCXTDescriptor ctxconfig, GLFBDescriptor fbconfig) throws AWTException {
         int apiBit, surfaceTypeBit;
         boolean wrongApiAvailable = false;
         
-        if (ctxconfig.client == AWT_OPENGL_ES_API)
+        if (ctxconfig.client() == OPENGL_ES)
         {
-            if (ctxconfig.major == 1)
+            if (ctxconfig.major() == 1)
                 apiBit = EGL_OPENGL_ES_BIT;
             else
                 apiBit = EGL_OPENGL_ES2_BIT;
@@ -131,7 +135,7 @@ public class EGLContext implements GLContext {
         //else
         //    surfaceTypeBit = EGL_WINDOW_BIT;
         
-        if (fbconfig.stereo)
+        if (fbconfig.stereo())
         {
             throw new AWTException("EGL: Stereo rendering not supported");
         }
@@ -146,12 +150,12 @@ public class EGLContext implements GLContext {
         eglGetConfigs(display, nativeConfigs, nativeCount);
         
         int usableCount = 0;
-        List<GLFBConfig> usableConfigs = new ArrayList<>();
+        List<GLFBDescriptor> usableConfigs = new ArrayList<>();
         
         for (int i = 0;  i < nativeCount.get(0);  i++)
         {
             long/*EGLConfig*/ config = nativeConfigs.get(i);
-            GLFBConfig data = new GLFBConfig();
+            GLFBDescriptorBuilder data = GLFBDescriptor.builder();
             
              // Only consider RGB(A) EGLConfigs
             if (getEGLConfigAttrib(config, EGL_COLOR_BUFFER_TYPE) != EGL_RGB_BUFFER)
@@ -166,13 +170,14 @@ public class EGLContext implements GLContext {
                 continue;
             }
             
-            data.redBits = getEGLConfigAttrib(config, EGL_RED_SIZE);
-            data.greenBits = getEGLConfigAttrib(config, EGL_GREEN_SIZE);
-            data.blueBits = getEGLConfigAttrib(config, EGL_BLUE_SIZE);
+            data.redBits(getEGLConfigAttrib(config, EGL_RED_SIZE));
+            data.greenBits(getEGLConfigAttrib(config, EGL_GREEN_SIZE));
+            data.blueBits(getEGLConfigAttrib(config, EGL_BLUE_SIZE));
 
-            data.alphaBits = getEGLConfigAttrib(config, EGL_ALPHA_SIZE);
-            data.depthBits = getEGLConfigAttrib(config, EGL_DEPTH_SIZE);
-            data.stencilBits = getEGLConfigAttrib(config, EGL_STENCIL_SIZE);
+            int alphaBits = getEGLConfigAttrib(config, EGL_ALPHA_SIZE);
+            data.alphaBits(alphaBits);
+            data.depthBits(getEGLConfigAttrib(config, EGL_DEPTH_SIZE));
+            data.stencilBits(getEGLConfigAttrib(config, EGL_STENCIL_SIZE));
             
             if (isWayland()) {
                  // NOTE: The wl_surface opaque region is no guarantee that its buffer
@@ -181,26 +186,27 @@ public class EGLContext implements GLContext {
                 //       with an alpha channel to ensure the buffer is opaque
                 if (!egl.EXT_present_opaque)
                 {
-                    if (!fbconfig.transparent && data.alphaBits > 0)
+                    if (!fbconfig.transparent() && alphaBits > 0)
                         continue;
                 }
             }
             
-            data.samples = getEGLConfigAttrib(config, EGL_SAMPLES);
-            data.doublebuffer = fbconfig.doublebuffer;
+            data.samples(getEGLConfigAttrib(config, EGL_SAMPLES));
+            data.doublebuffer(fbconfig.doublebuffer());
 
-            data.handle = config;
-            usableConfigs.add(data);
+            GLFBDescriptor descriptor = data.build();
+            descriptor.handle(config);
+            usableConfigs.add(descriptor);
             usableCount++;
         }
         
-        GLFBConfig result = glGetChooseFBConfig(fbconfig, usableConfigs, usableCount);
+        GLFBDescriptor result = glGetChooseFBConfig(fbconfig, usableConfigs, usableCount);
         if (result == null) {
             if (wrongApiAvailable)
             {
-                if (ctxconfig.client == AWT_OPENGL_ES_API)
+                if (ctxconfig.client() == OPENGL_ES)
                 {
-                    if (ctxconfig.major == 1) {
+                    if (ctxconfig.major() == 1) {
                         throw new AWTException("EGL: Failed to find support for OpenGL ES 1.x");
                     } else {
                         throw new AWTException("EGL: Failed to find support for OpenGL ES 2 or later");
@@ -287,8 +293,8 @@ public class EGLContext implements GLContext {
     
     @Override
     public void create() throws AWTException {        
-        GLPlatformConfig ctxconfig = gldata.getPlatformConfig();
-        GLFBConfig fbconfig = gldata.getFBConfig();
+        GLCXTDescriptor ctxconfig = gldata.getCXTConfig();
+        GLFBDescriptor fbconfig   = gldata.getFBConfig();
         
         IntBuffer attribs = BufferUtils.createIntBuffer(40);
         long share = NULL;
@@ -297,14 +303,14 @@ public class EGLContext implements GLContext {
             throw new AWTException("EGL: API not available");
         }
         
-        if (ctxconfig.share != NULL)
-            share = ctxconfig.share;
+        if (ctxconfig.share() != NULL)
+            share = ctxconfig.share();
         
-        GLFBConfig config = chooseEGLConfig(ctxconfig, fbconfig);
+        GLFBDescriptor config = chooseEGLConfig(ctxconfig, fbconfig);
         if (config == null)
             throw new AWTException("EGL: Failed to find a suitable EGLConfig");
         
-        if (ctxconfig.client == AWT_OPENGL_ES_API)
+        if (ctxconfig.client() == OPENGL_ES)
         {
             if (!eglBindAPI(EGL_OPENGL_ES_API))
             {
@@ -325,28 +331,28 @@ public class EGLContext implements GLContext {
         {
             int mask = 0, flags = 0;
 
-            if (ctxconfig.client == AWT_OPENGL_API)
+            if (ctxconfig.client() == OPENGL)
             {
-                if (ctxconfig.forward)
+                if (ctxconfig.forward())
                     flags |= EGL_CONTEXT_OPENGL_FORWARD_COMPATIBLE_BIT_KHR;
 
-                if (ctxconfig.profile == AWT_OPENGL_CORE_PROFILE)
+                if (ctxconfig.profile() == CORE_PROFILE)
                     mask |= EGL_CONTEXT_OPENGL_CORE_PROFILE_BIT_KHR;
-                else if (ctxconfig.profile == AWT_OPENGL_COMPAT_PROFILE)
+                else if (ctxconfig.profile() == COMPATIBILITY_PROFILE)
                     mask |= EGL_CONTEXT_OPENGL_COMPATIBILITY_PROFILE_BIT_KHR;
             }
 
-            if (ctxconfig.debug)
+            if (ctxconfig.debug())
                 flags |= EGL_CONTEXT_OPENGL_DEBUG_BIT_KHR;
 
-            if (BOOL(ctxconfig.robustness))
+            if (BOOL(ctxconfig.robustness()))
             {
-                if (ctxconfig.robustness == AWT_NO_RESET_NOTIFICATION)
+                if (ctxconfig.robustness() == NO_RESET_NOTIFICATION)
                 {
                     attribs.put(EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_KHR)
                            .put(EGL_NO_RESET_NOTIFICATION_KHR);
                 }
-                else if (ctxconfig.robustness == AWT_LOSE_CONTEXT_ON_RESET)
+                else if (ctxconfig.robustness() == LOSE_CONTEXT_ON_RESET)
                 {
                     attribs.put(EGL_CONTEXT_OPENGL_RESET_NOTIFICATION_STRATEGY_KHR)
                            .put(EGL_LOSE_CONTEXT_ON_RESET_KHR);
@@ -355,13 +361,13 @@ public class EGLContext implements GLContext {
                 flags |= EGL_CONTEXT_OPENGL_ROBUST_ACCESS_BIT_KHR;
             }
 
-            if (ctxconfig.major != 1 || ctxconfig.minor != 0)
+            if (ctxconfig.major() != 1 || ctxconfig.minor() != 0)
             {
-                attribs.put(EGL_CONTEXT_MAJOR_VERSION_KHR).put(ctxconfig.major);
-                attribs.put(EGL_CONTEXT_MINOR_VERSION_KHR).put(ctxconfig.minor);
+                attribs.put(EGL_CONTEXT_MAJOR_VERSION_KHR).put(ctxconfig.major());
+                attribs.put(EGL_CONTEXT_MINOR_VERSION_KHR).put(ctxconfig.minor());
             }
 
-            if (ctxconfig.noerror)
+            if (ctxconfig.noerror())
             {
                 if (egl.KHR_create_context_no_error)
                     attribs.put(EGL_CONTEXT_OPENGL_NO_ERROR_KHR).put(EGL_TRUE);
@@ -375,18 +381,18 @@ public class EGLContext implements GLContext {
         }
         else
         {
-            if (ctxconfig.client == AWT_OPENGL_ES_API)
-                attribs.put(EGL_CONTEXT_CLIENT_VERSION).put(ctxconfig.major);
+            if (ctxconfig.client() == OPENGL_ES)
+                attribs.put(EGL_CONTEXT_CLIENT_VERSION).put(ctxconfig.major());
         }
 
         if (egl.KHR_context_flush_control)
         {
-            if (ctxconfig.release == AWT_RELEASE_BEHAVIOR_NONE)
+            if (ctxconfig.release() == NONE)
             {
                 attribs.put(EGL_CONTEXT_RELEASE_BEHAVIOR_KHR)
                        .put(EGL_CONTEXT_RELEASE_BEHAVIOR_NONE_KHR);
             }
-            else if (ctxconfig.release == AWT_RELEASE_BEHAVIOR_FLUSH)
+            else if (ctxconfig.release() == FLUSH)
             {
                 attribs.put(EGL_CONTEXT_RELEASE_BEHAVIOR_KHR)
                        .put(EGL_CONTEXT_RELEASE_BEHAVIOR_FLUSH_KHR);
@@ -397,7 +403,7 @@ public class EGLContext implements GLContext {
         attribs.flip();
         
         context = eglCreateContext(display,
-                                    config.handle, share, attribs);
+                                    config.handle(), share, attribs);
 
         if (context == EGL_NO_CONTEXT) {
             throw new IllegalStateException("EGL: Failed to create context: %s"
@@ -407,19 +413,19 @@ public class EGLContext implements GLContext {
         // Set up attributes for surface creation
         attribs.rewind();
         
-        if (fbconfig.sRGB)
+        if (fbconfig.sRGB())
         {
             if (egl.KHR_gl_colorspace)
                 attribs.put(EGL_GL_COLORSPACE_KHR).put(EGL_GL_COLORSPACE_SRGB_KHR);
         }
         
-        if (!fbconfig.doublebuffer)
+        if (!fbconfig.doublebuffer())
             attribs.put(EGL_RENDER_BUFFER).put(EGL_SINGLE_BUFFER);
         
         if (isWayland())
         {
             if (egl.EXT_present_opaque) {
-                attribs.put(EGL_PRESENT_OPAQUE_EXT).put((fbconfig.transparent) ? EGL_FALSE : EGL_TRUE);
+                attribs.put(EGL_PRESENT_OPAQUE_EXT).put((fbconfig.transparent()) ? EGL_FALSE : EGL_TRUE);
             }
         }
         
@@ -430,7 +436,7 @@ public class EGLContext implements GLContext {
         // HACK: Use a non-platform function for all, as 
         //       eglCreatePlatformWindowSurfaceEXT does not work with AWT 
         //       despite stating that it supports EGL_EXT_platform_base.
-        surface = eglCreateWindowSurface(display, config.handle, _native, attribs);
+        surface = eglCreateWindowSurface(display, config.handle(), _native, attribs);
 
         if (surface == EGL_NO_SURFACE)
         {

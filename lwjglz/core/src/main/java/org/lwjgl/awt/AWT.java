@@ -39,4 +39,8 @@ public class AWT {
         }
         return number != 0;
     }
+    
+    public static boolean BOOL(Object value) {
+        return value != null;
+    }
 }

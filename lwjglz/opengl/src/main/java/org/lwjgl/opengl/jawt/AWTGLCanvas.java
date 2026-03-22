@@ -52,7 +52,12 @@ public class AWTGLCanvas extends Canvas {
     };
 
     public AWTGLCanvas() {
-        this(new GLData(), null, null);
+        this(new GLData(GLCXTDescriptor.builder()
+                .build(),
+                GLFBDescriptor.builder()
+                        .build()),
+                null,
+                null);
     }
 
     public AWTGLCanvas(GLData data) {
@@ -155,7 +160,7 @@ public class AWTGLCanvas extends Canvas {
                 window.lock();
                 try {
                     if (context == null) {
-                        context = glNewAttachContext(window, data, NULL);
+                        context = glNewAttachContext(window, data);
                         context.initGL();
                         context.create();
                         context.makeCurrent();

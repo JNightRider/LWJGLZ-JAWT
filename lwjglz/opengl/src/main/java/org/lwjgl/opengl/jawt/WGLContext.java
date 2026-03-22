@@ -34,6 +34,10 @@ import static org.lwjgl.opengl.WGLEXTSwapControl.*;
 
 import static org.lwjgl.awt.AWT.*;
 import static org.lwjgl.opengl.jawt.AWTGL.*;
+import static org.lwjgl.opengl.jawt.AWTGL.GLClientAPI.*;
+import static org.lwjgl.opengl.jawt.AWTGL.GLProfile.*;
+import static org.lwjgl.opengl.jawt.AWTGL.GLReleaseBehavior.*;
+import static org.lwjgl.opengl.jawt.AWTGL.GLRobustness.*;
 
 import static org.lwjgl.system.APIUtil.*;
 import static org.lwjgl.system.Checks.*;
@@ -112,7 +116,7 @@ public class WGLContext implements GLContext {
         return findPixelFormatAttribValueWGL(attribs, values, attrib) != 0;
     }
     
-    private GLFBConfig choosePixelFormatWGL(GLPlatformConfig ctxconfig, GLFBConfig fbconfig) throws AWTException {
+    private GLFBDescriptor choosePixelFormatWGL(GLCXTDescriptor ctxconfig, GLFBDescriptor fbconfig) throws AWTException {
         IntBuffer attribs = BufferUtils.createIntBuffer(40);
         IntBuffer values  = BufferUtils.createIntBuffer(40);
     
@@ -148,7 +152,7 @@ public class WGLContext implements GLContext {
             if (wgl.ARB_multisample) 
                 attribs.put(WGL_SAMPLES_ARB);
             
-            if (ctxconfig.client == AWT_OPENGL_API)
+            if (ctxconfig.client() == OPENGL)
             {
                 if (wgl.ARB_framebuffer_sRGB || wgl.EXT_framebuffer_sRGB)
                     attribs.put(WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB);
@@ -182,12 +186,12 @@ public class WGLContext implements GLContext {
             }
         }
         
-        List<GLFBConfig> usableConfigs = new ArrayList<>();
+        List<GLFBDescriptor> usableConfigs = new ArrayList<>();
         int usableCount = 0,
             pixelFormat;
         
         for (int i = 0;  i < nativeCount;  i++) {
-            GLFBConfig data = new GLFBConfig();
+            GLFBDescriptorBuilder data = GLFBDescriptor.builder();
             pixelFormat = i + 1;
 
             if (wgl.ARB_pixel_format)
@@ -211,39 +215,39 @@ public class WGLContext implements GLContext {
                 if (findPixelFormatAttribValueWGL(attribs, values, WGL_ACCELERATION_ARB) == WGL_NO_ACCELERATION_ARB)
                     continue;
 
-                if (findBoolPixelFormatAttribValueWGL(attribs, values, WGL_DOUBLE_BUFFER_ARB) != fbconfig.doublebuffer)
+                if (findBoolPixelFormatAttribValueWGL(attribs, values, WGL_DOUBLE_BUFFER_ARB) != fbconfig.doublebuffer())
                     continue;
 
-                data.redBits = findPixelFormatAttribValueWGL(attribs, values, WGL_RED_BITS_ARB);
-                data.greenBits = findPixelFormatAttribValueWGL(attribs, values, WGL_GREEN_BITS_ARB);
-                data.blueBits = findPixelFormatAttribValueWGL(attribs, values, WGL_BLUE_BITS_ARB);
-                data.alphaBits = findPixelFormatAttribValueWGL(attribs, values, WGL_ALPHA_BITS_ARB);
+                data.redBits(findPixelFormatAttribValueWGL(attribs, values, WGL_RED_BITS_ARB));
+                data.greenBits(findPixelFormatAttribValueWGL(attribs, values, WGL_GREEN_BITS_ARB));
+                data.blueBits(findPixelFormatAttribValueWGL(attribs, values, WGL_BLUE_BITS_ARB));
+                data.alphaBits(findPixelFormatAttribValueWGL(attribs, values, WGL_ALPHA_BITS_ARB));
 
-                data.depthBits = findPixelFormatAttribValueWGL(attribs, values, WGL_DEPTH_BITS_ARB);
-                data.stencilBits = findPixelFormatAttribValueWGL(attribs, values, WGL_STENCIL_BITS_ARB);
+                data.depthBits(findPixelFormatAttribValueWGL(attribs, values, WGL_DEPTH_BITS_ARB));
+                data.stencilBits(findPixelFormatAttribValueWGL(attribs, values, WGL_STENCIL_BITS_ARB));
 
-                data.accumRedBits = findPixelFormatAttribValueWGL(attribs, values, WGL_ACCUM_RED_BITS_ARB);
-                data.accumGreenBits = findPixelFormatAttribValueWGL(attribs, values, WGL_ACCUM_GREEN_BITS_ARB);
-                data.accumBlueBits = findPixelFormatAttribValueWGL(attribs, values, WGL_ACCUM_BLUE_BITS_ARB);
-                data.accumAlphaBits = findPixelFormatAttribValueWGL(attribs, values, WGL_ACCUM_ALPHA_BITS_ARB);
+                data.accumRedBits(findPixelFormatAttribValueWGL(attribs, values, WGL_ACCUM_RED_BITS_ARB));
+                data.accumGreenBits(findPixelFormatAttribValueWGL(attribs, values, WGL_ACCUM_GREEN_BITS_ARB));
+                data.accumBlueBits(findPixelFormatAttribValueWGL(attribs, values, WGL_ACCUM_BLUE_BITS_ARB));
+                data.accumAlphaBits(findPixelFormatAttribValueWGL(attribs, values, WGL_ACCUM_ALPHA_BITS_ARB));
 
-                data.auxBuffers = findPixelFormatAttribValueWGL(attribs, values, WGL_AUX_BUFFERS_ARB);
-                data.stereo = findBoolPixelFormatAttribValueWGL(attribs, values, WGL_STEREO_ARB);
+                data.auxBuffers(findPixelFormatAttribValueWGL(attribs, values, WGL_AUX_BUFFERS_ARB));
+                data.stereo(findBoolPixelFormatAttribValueWGL(attribs, values, WGL_STEREO_ARB));
 
                 if (wgl.ARB_multisample)
-                    data.samples = findPixelFormatAttribValueWGL(attribs, values, WGL_SAMPLES_ARB);
+                    data.samples(findPixelFormatAttribValueWGL(attribs, values, WGL_SAMPLES_ARB));
 
-                if (ctxconfig.client == AWT_OPENGL_API)
+                if (ctxconfig.client() == OPENGL)
                 {
                     if (wgl.ARB_framebuffer_sRGB || wgl.EXT_framebuffer_sRGB)
-                        data.sRGB = findBoolPixelFormatAttribValueWGL(attribs, values, WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB);
+                        data.sRGB(findBoolPixelFormatAttribValueWGL(attribs, values, WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB));
                 }
                 else
                 {
                     if (wgl.EXT_colorspace)
                     {
                         if (findPixelFormatAttribValueWGL(attribs, values, WGL_COLORSPACE_EXT) == WGL_COLORSPACE_SRGB_EXT)
-                            data.sRGB = true;
+                            data.sRGB(true);
                     }
                 }
             }
@@ -274,29 +278,31 @@ public class WGLContext implements GLContext {
                     if (pfd.iPixelType() != PFD_TYPE_RGBA)
                         continue;
 
-                    if (!!(BOOL(pfd.dwFlags() & PFD_DOUBLEBUFFER)) != fbconfig.doublebuffer)
+                    if (!!(BOOL(pfd.dwFlags() & PFD_DOUBLEBUFFER)) != fbconfig.doublebuffer())
                         continue;
 
-                    data.redBits = pfd.cRedBits();
-                    data.greenBits = pfd.cGreenBits();
-                    data.blueBits = pfd.cBlueBits();
-                    data.alphaBits = pfd.cAlphaBits();
+                    data.redBits(pfd.cRedBits());
+                    data.greenBits(pfd.cGreenBits());
+                    data.blueBits(pfd.cBlueBits());
+                    data.alphaBits(pfd.cAlphaBits());
 
-                    data.depthBits = pfd.cDepthBits();
-                    data.stencilBits = pfd.cStencilBits();
+                    data.depthBits(pfd.cDepthBits());
+                    data.stencilBits(pfd.cStencilBits());
 
-                    data.accumRedBits = pfd.cAccumRedBits();
-                    data.accumGreenBits = pfd.cAccumGreenBits();
-                    data.accumBlueBits = pfd.cAccumBlueBits();
-                    data.accumAlphaBits = pfd.cAccumAlphaBits();
+                    data.accumRedBits(pfd.cAccumRedBits());
+                    data.accumGreenBits(pfd.cAccumGreenBits());
+                    data.accumBlueBits(pfd.cAccumBlueBits());
+                    data.accumAlphaBits(pfd.cAccumAlphaBits());
 
-                    data.auxBuffers = pfd.cAuxBuffers();
-                    data.stereo = BOOL(pfd.dwFlags() & PFD_STEREO);
+                    data.auxBuffers(pfd.cAuxBuffers());
+                    data.stereo(BOOL(pfd.dwFlags() & PFD_STEREO));
                 }
             }
             
-            data.handle = pixelFormat;
-            usableConfigs.add(data);
+            GLFBDescriptor descriptor = data.build();
+            descriptor.handle(pixelFormat);
+            
+            usableConfigs.add(descriptor);
             usableCount++;
         }
         
@@ -305,7 +311,7 @@ public class WGLContext implements GLContext {
             throw new AWTException("WGL: The driver does not appear to support OpenGL");
         }
         
-        GLFBConfig closest = glGetChooseFBConfig(fbconfig, usableConfigs, usableCount);
+        GLFBDescriptor closest = glGetChooseFBConfig(fbconfig, usableConfigs, usableCount);
         if (closest == null) {
             throw new AWTException("WGL: Failed to find a suitable pixel format");
         }
@@ -420,15 +426,15 @@ public class WGLContext implements GLContext {
     }
     
     @Override
-    public void create() throws AWTException {        
-        GLPlatformConfig ctxconfig = gldata.getPlatformConfig();
-        GLFBConfig fbconfig = gldata.getFBConfig();
+    public void create() throws AWTException {
+        GLCXTDescriptor ctxconfig = gldata.getCXTConfig();
+        GLFBDescriptor fbconfig   = gldata.getFBConfig();
         
         IntBuffer attribs = BufferUtils.createIntBuffer(40);
         long share = NULL;
         
-        if (ctxconfig.share != NULL)
-            share = ctxconfig.share;
+        if (ctxconfig.share()!= NULL)
+            share = ctxconfig.share();
         
         dc = GetDC(window.getHWND());
         if (dc == NULL)
@@ -436,7 +442,7 @@ public class WGLContext implements GLContext {
             throw new AWTException("WGL: Failed to retrieve DC for window");
         }
         
-        GLFBConfig pixelFormat = choosePixelFormatWGL(ctxconfig, fbconfig);
+        GLFBDescriptor pixelFormat = choosePixelFormatWGL(ctxconfig, fbconfig);
         if (pixelFormat == null) {
             throw new AWTException("WGL: PilexFormat");
         }
@@ -445,23 +451,22 @@ public class WGLContext implements GLContext {
             PIXELFORMATDESCRIPTOR pfd = PIXELFORMATDESCRIPTOR.calloc(stack);
             
             if (!BOOL(DescribePixelFormat(null, dc,
-                             (int) pixelFormat.handle, pfd))) {
+                             (int) pixelFormat.handle(), pfd))) {
                 throw new AWTException("WGL: Failed to retrieve PFD for selected pixel format");
             }            
-            if (!SetPixelFormat(null, dc, (int) pixelFormat.handle, pfd)) {
+            if (!SetPixelFormat(null, dc, (int) pixelFormat.handle(), pfd)) {
                 throw new AWTException("WGL: Failed to set selected pixel format");
             }
         }
-        
-        
-        if (ctxconfig.client == AWT_OPENGL_API) {
-            if (ctxconfig.forward) {
+
+        if (ctxconfig.client() == OPENGL) {
+            if (ctxconfig.forward()) {
                 if (!wgl.ARB_create_context) {
                     throw new AWTException("WGL: A forward compatible OpenGL context requested but WGL_ARB_create_context is unavailable");
                 }
             }
 
-            if (BOOL(ctxconfig.profile)) {
+            if (BOOL(ctxconfig.profile())) {
                 if (!wgl.ARB_create_context_profile) {
                     throw new AWTException("WGL: OpenGL profile requested but WGL_ARB_create_context_profile is unavailable");
                 }
@@ -478,32 +483,32 @@ public class WGLContext implements GLContext {
         {
             int mask = 0, flags = 0;
 
-            if (ctxconfig.client == AWT_OPENGL_API)
+            if (ctxconfig.client() == OPENGL)
             {
-                if (ctxconfig.forward)
+                if (ctxconfig.forward())
                     flags |= WGL_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;
 
-                if (ctxconfig.profile == AWT_OPENGL_CORE_PROFILE)
+                if (ctxconfig.profile() == CORE_PROFILE)
                     mask |= WGL_CONTEXT_CORE_PROFILE_BIT_ARB;
-                else if (ctxconfig.profile == AWT_OPENGL_COMPAT_PROFILE)
+                else if (ctxconfig.profile() == COMPATIBILITY_PROFILE)
                     mask |= WGL_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
             }
             else
                 mask |= WGL_CONTEXT_ES2_PROFILE_BIT_EXT;
 
-            if (ctxconfig.debug)
+            if (ctxconfig.debug())
                 flags |= WGL_CONTEXT_DEBUG_BIT_ARB;
 
-            if (BOOL(ctxconfig.robustness))
+            if (BOOL(ctxconfig.robustness()))
             {
                 if (wgl.ARB_create_context_robustness)
                 {
-                    if (ctxconfig.robustness == AWT_NO_RESET_NOTIFICATION)
+                    if (ctxconfig.robustness() == NO_RESET_NOTIFICATION)
                     {
                         attribs.put(WGL_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB)
                                .put(WGL_NO_RESET_NOTIFICATION_ARB);
                     }
-                    else if (ctxconfig.robustness == AWT_LOSE_CONTEXT_ON_RESET)
+                    else if (ctxconfig.robustness() == LOSE_CONTEXT_ON_RESET)
                     {
                         attribs.put(WGL_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB)
                                .put(WGL_LOSE_CONTEXT_ON_RESET_ARB);
@@ -513,16 +518,16 @@ public class WGLContext implements GLContext {
                 }
             }
 
-            if (BOOL(ctxconfig.release))
+            if (BOOL(ctxconfig.release()))
             {
                 if (wgl.ARB_context_flush_control)
                 {
-                    if (ctxconfig.release == AWT_RELEASE_BEHAVIOR_NONE)
+                    if (ctxconfig.release() == NONE)
                     {
                         attribs.put(WGL_CONTEXT_RELEASE_BEHAVIOR_ARB)
                                .put(WGL_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB);
                     }
-                    else if (ctxconfig.release == AWT_RELEASE_BEHAVIOR_FLUSH)
+                    else if (ctxconfig.release() == FLUSH)
                     {
                         attribs.put(WGL_CONTEXT_RELEASE_BEHAVIOR_ARB)
                                .put(WGL_CONTEXT_RELEASE_BEHAVIOR_FLUSH_ARB);
@@ -530,7 +535,7 @@ public class WGLContext implements GLContext {
                 }
             }
 
-            if (ctxconfig.noerror)
+            if (ctxconfig.noerror())
             {
                 if (wgl.ARB_create_context_no_error)
                     attribs.put(WGL_CONTEXT_OPENGL_NO_ERROR_ARB).put(GL_TRUE);
@@ -539,10 +544,10 @@ public class WGLContext implements GLContext {
             // NOTE: Only request an explicitly versioned context when necessary, as
             //       explicitly requesting version 1.0 does not always return the
             //       highest version supported by the driver
-            if (ctxconfig.major != 1 || ctxconfig.minor != 0)
+            if (ctxconfig.major() != 1 || ctxconfig.minor() != 0)
             {
-                attribs.put(WGL_CONTEXT_MAJOR_VERSION_ARB).put(ctxconfig.major);
-                attribs.put(WGL_CONTEXT_MINOR_VERSION_ARB).put(ctxconfig.minor);
+                attribs.put(WGL_CONTEXT_MAJOR_VERSION_ARB).put(ctxconfig.major());
+                attribs.put(WGL_CONTEXT_MINOR_VERSION_ARB).put(ctxconfig.minor());
             }
 
             if (BOOL(flags))
@@ -560,21 +565,21 @@ public class WGLContext implements GLContext {
                 final int error = GetLastError();
 
                 if (error == (0xc0070000 | ERROR_INVALID_VERSION_ARB)) {
-                    if (ctxconfig.client == AWT_OPENGL_API) {
+                    if (ctxconfig.client() == OPENGL) {
                         throw new AWTException("WGL: Driver does not support OpenGL version %i.%i"
-                                .formatted(ctxconfig.major,
-                                        ctxconfig.minor));
+                                .formatted(ctxconfig.major(),
+                                        ctxconfig.minor()));
                     } else {
                         throw new AWTException("WGL: Driver does not support OpenGL ES version %i.%i"
-                                .formatted(ctxconfig.major,
-                                        ctxconfig.minor));
+                                .formatted(ctxconfig.major(),
+                                        ctxconfig.minor()));
                     }
                 } else if (error == (0xc0070000 | ERROR_INVALID_PROFILE_ARB)) {
                     throw new AWTException("WGL: Driver does not support the requested OpenGL profile");
                 } else if (error == (0xc0070000 | ERROR_INCOMPATIBLE_DEVICE_CONTEXTS_ARB)) {
                     throw new AWTException("WGL: The share context is not compatible with the requested context");
                 } else {
-                    if (ctxconfig.client == AWT_OPENGL_API) {
+                    if (ctxconfig.client() == OPENGL) {
                         throw new AWTException("WGL: Failed to create OpenGL context");
                     } else {
                         throw new AWTException("WGL: Failed to create OpenGL ES context");

@@ -15,29 +15,35 @@ import static org.lwjgl.system.Configuration.*;
  * @author wil
  */
 public final class AWTGL {
-    public static final int
-            AWT_NATIVE_CONTEXT_API      = 0,
-            AWT_EGL_CONTEXT_API         = 1;
     
-    public static final int
-            AWT_NO_API                 = 0,
-            AWT_OPENGL_ES_API          = 1,
-            AWT_OPENGL_API             = 2;
+    public enum GLClientType {
+        NATIVE,
+        EGL;
+    }
     
-    public static final int
-            AWT_NO_ROBUSTNESS          = 0,
-            AWT_NO_RESET_NOTIFICATION  = 1,
-            AWT_LOSE_CONTEXT_ON_RESET  = 2;
+    public enum GLClientAPI {
+        NO_API,
+        OPENGL_ES,
+        OPENGL;
+    }
     
-    public static final int
-            AWT_OPENGL_ANY_PROFILE     = 0,
-            AWT_OPENGL_CORE_PROFILE    = 1,
-            AWT_OPENGL_COMPAT_PROFILE  = 2;
+    public enum GLRobustness {
+        NO_ROBUSTNESS,
+        NO_RESET_NOTIFICATION,
+        LOSE_CONTEXT_ON_RESET;
+    }
     
-    public static final int
-            AWT_ANY_RELEASE_BEHAVIOR   = 0,
-            AWT_RELEASE_BEHAVIOR_FLUSH = 1,
-            AWT_RELEASE_BEHAVIOR_NONE  = 2;
+    public enum GLReleaseBehavior {
+        ANY,
+        FLUSH,
+        NONE;
+    }
+    
+    public enum GLProfile {
+        ANY_PROFILE,
+        CORE_PROFILE,
+        COMPATIBILITY_PROFILE;
+    }
     
     public static Window glGetAttachWindow() {
         switch (Platform.get()) {
@@ -48,10 +54,7 @@ public final class AWTGL {
         }
     }
     
-    public static GLContext glNewAttachContext(Window window, GLData data, long share) {
-        data.getPlatformConfig()
-            .share = share;
-        
+    public static GLContext glNewAttachContext(Window window, GLData data) {
         if (window instanceof X11Window x11) {
             if (isWayland() && !"native".equals(OPENGL_CONTEXT_API.get())) {
                 return new EGLContext(x11, data);
@@ -77,19 +80,19 @@ public final class AWTGL {
         return false;
     }
     
-    static GLFBConfig glGetChooseFBConfig(GLFBConfig desired, List<GLFBConfig> alternatives, int count) {
+    static GLFBDescriptor glGetChooseFBConfig(GLFBDescriptor desired, List<GLFBDescriptor> alternatives, int count) {
         int i;
         long missing,   leastMissing   = UINT_MAX;
         long colorDiff, leastColorDiff = UINT_MAX;
         long extraDiff, leastExtraDiff = UINT_MAX;
         
-        GLFBConfig current;
-        GLFBConfig closest = null;
+        GLFBDescriptor current;
+        GLFBDescriptor closest = null;
     
         for (i = 0; i < count; i++) {
             current = alternatives.get(i);
             
-            if (desired.stereo && !current.stereo)
+            if (desired.stereo() && !current.stereo())
             {
                 // Stereo is a hard constraint
                 continue;
@@ -99,22 +102,22 @@ public final class AWTGL {
             {
                 missing = 0;
 
-                if (desired.alphaBits > 0 && current.alphaBits == 0)
+                if (desired.alphaBits() > 0 && current.alphaBits() == 0)
                     missing++;
 
-                if (desired.depthBits > 0 && current.depthBits == 0)
+                if (desired.depthBits() > 0 && current.depthBits() == 0)
                     missing++;
 
-                if (desired.stencilBits > 0 && current.stencilBits == 0)
+                if (desired.stencilBits() > 0 && current.stencilBits() == 0)
                     missing++;
 
-                if (desired.auxBuffers > 0 &&
-                    current.auxBuffers < desired.auxBuffers)
+                if (desired.auxBuffers() > 0 &&
+                    current.auxBuffers() < desired.auxBuffers())
                 {
-                    missing += desired.auxBuffers - current.auxBuffers;
+                    missing += desired.auxBuffers() - current.auxBuffers();
                 }
 
-                if (desired.samples > 0 && current.samples == 0)
+                if (desired.samples() > 0 && current.samples() == 0)
                 {
                     // Technically, several multisampling buffers could be
                     // involved, but that's a lower level implementation detail and
@@ -130,22 +133,22 @@ public final class AWTGL {
             {
                 colorDiff = 0;
 
-                if (desired.redBits != -1)
+                if (desired.redBits() != -1)
                 {
-                    colorDiff += (desired.redBits - current.redBits) *
-                                 (desired.redBits - current.redBits);
+                    colorDiff += (desired.redBits() - current.redBits()) *
+                                 (desired.redBits() - current.redBits());
                 }
 
-                if (desired.greenBits != -1)
+                if (desired.greenBits() != -1)
                 {
-                    colorDiff += (desired.greenBits - current.greenBits) *
-                                 (desired.greenBits - current.greenBits);
+                    colorDiff += (desired.greenBits() - current.greenBits()) *
+                                 (desired.greenBits() - current.greenBits());
                 }
 
-                if (desired.blueBits != -1)
+                if (desired.blueBits() != -1)
                 {
-                    colorDiff += (desired.blueBits - current.blueBits) *
-                                 (desired.blueBits - current.blueBits);
+                    colorDiff += (desired.blueBits() - current.blueBits()) *
+                                 (desired.blueBits() - current.blueBits());
                 }
             }
             
@@ -153,55 +156,55 @@ public final class AWTGL {
             {
                 extraDiff = 0;
 
-                if (desired.alphaBits != -1)
+                if (desired.alphaBits() != -1)
                 {
-                    extraDiff += (desired.alphaBits - current.alphaBits) *
-                                 (desired.alphaBits - current.alphaBits);
+                    extraDiff += (desired.alphaBits() - current.alphaBits()) *
+                                 (desired.alphaBits() - current.alphaBits());
                 }
 
-                if (desired.depthBits != -1)
+                if (desired.depthBits() != -1)
                 {
-                    extraDiff += (desired.depthBits - current.depthBits) *
-                                 (desired.depthBits - current.depthBits);
+                    extraDiff += (desired.depthBits() - current.depthBits()) *
+                                 (desired.depthBits() - current.depthBits());
                 }
 
-                if (desired.stencilBits != -1)
+                if (desired.stencilBits() != -1)
                 {
-                    extraDiff += (desired.stencilBits - current.stencilBits) *
-                                 (desired.stencilBits - current.stencilBits);
+                    extraDiff += (desired.stencilBits() - current.stencilBits()) *
+                                 (desired.stencilBits() - current.stencilBits());
                 }
 
-                if (desired.accumRedBits != -1)
+                if (desired.accumRedBits() != -1)
                 {
-                    extraDiff += (desired.accumRedBits - current.accumRedBits) *
-                                 (desired.accumRedBits - current.accumRedBits);
+                    extraDiff += (desired.accumRedBits() - current.accumRedBits()) *
+                                 (desired.accumRedBits() - current.accumRedBits());
                 }
 
-                if (desired.accumGreenBits != -1)
+                if (desired.accumGreenBits() != -1)
                 {
-                    extraDiff += (desired.accumGreenBits - current.accumGreenBits) *
-                                 (desired.accumGreenBits - current.accumGreenBits);
+                    extraDiff += (desired.accumGreenBits() - current.accumGreenBits()) *
+                                 (desired.accumGreenBits() - current.accumGreenBits());
                 }
 
-                if (desired.accumBlueBits != -1)
+                if (desired.accumBlueBits() != -1)
                 {
-                    extraDiff += (desired.accumBlueBits - current.accumBlueBits) *
-                                 (desired.accumBlueBits - current.accumBlueBits);
+                    extraDiff += (desired.accumBlueBits() - current.accumBlueBits()) *
+                                 (desired.accumBlueBits() - current.accumBlueBits());
                 }
 
-                if (desired.accumAlphaBits != -1)
+                if (desired.accumAlphaBits() != -1)
                 {
-                    extraDiff += (desired.accumAlphaBits - current.accumAlphaBits) *
-                                 (desired.accumAlphaBits - current.accumAlphaBits);
+                    extraDiff += (desired.accumAlphaBits() - current.accumAlphaBits()) *
+                                 (desired.accumAlphaBits() - current.accumAlphaBits());
                 }
 
-                if (desired.samples != -1)
+                if (desired.samples() != -1)
                 {
-                    extraDiff += (desired.samples - current.samples) *
-                                 (desired.samples - current.samples);
+                    extraDiff += (desired.samples() - current.samples()) *
+                                 (desired.samples() - current.samples());
                 }
 
-                if (desired.sRGB && !current.sRGB)
+                if (desired.sRGB() && !current.sRGB())
                     extraDiff++;
             }
             

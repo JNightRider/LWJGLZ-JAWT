@@ -17,9 +17,8 @@ import org.lwjgl.system.*;
 import java.nio.*;
 import org.joml.Matrix4f;
 
-import static org.lwjgl.opengl.jawt.AWTGL.*;
-import static org.lwjgl.opengl.jawt.GLData.*;
 import static org.lwjgl.opengl.GL30C.*;
+import static org.lwjgl.opengl.jawt.AWTGL.GLProfile.*;
 import static org.lwjgl.system.MemoryStack.*;
 
 /**
@@ -150,13 +149,17 @@ public class TriangleOpengl {
     }
     
     void run() {
-        GLData gldata = new GLData();
-        gldata.glHint(GLDATA_CONTEXT_VERSION_MAJOR, 3);
-        gldata.glHint(GLDATA_CONTEXT_VERSION_MINOR, 3);
-        gldata.glHint(GLDATA_OPENGL_PROFILE, AWT_OPENGL_CORE_PROFILE);
-        
         {
-            canvas = new AWTGLCanvas(gldata) {
+            GLFBDescriptorBuilder fbbuilder   = GLFBDescriptor.builder();
+            GLCXTDescriptorBuilder ctxbuilder = GLCXTDescriptor.builder();
+            ctxbuilder.profile(CORE_PROFILE)
+                      .major(3)
+                      .minor(3);
+
+            GLFBDescriptor frameBuffer = fbbuilder.build();
+            GLCXTDescriptor cxtconfig = ctxbuilder.build();
+            
+            canvas = new AWTGLCanvas(new GLData(cxtconfig, frameBuffer)) {
                 @Override
                 protected void initGL() {
                     setSwapInterval(1);

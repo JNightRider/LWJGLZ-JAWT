@@ -29,6 +29,10 @@ import static org.lwjgl.opengl.GLXSGISwapControl.*;
 
 import static org.lwjgl.awt.AWT.*;
 import static org.lwjgl.opengl.jawt.AWTGL.*;
+import static org.lwjgl.opengl.jawt.AWTGL.GLClientAPI.*;
+import static org.lwjgl.opengl.jawt.AWTGL.GLProfile.*;
+import static org.lwjgl.opengl.jawt.AWTGL.GLReleaseBehavior.*;
+import static org.lwjgl.opengl.jawt.AWTGL.GLRobustness.*;
 
 import static org.lwjgl.system.APIUtil.*;
 import static org.lwjgl.system.JNI.*;
@@ -81,12 +85,12 @@ public class GLXContext implements GLContext {
     private final X11Window window;
     private final XCapabilities glx;
     
-    private final GLData data;
+    private final GLData gldata;
     private long context;
 
     public GLXContext(X11Window window, GLData data) {
         this.glx    = new XCapabilities();
-        this.data   = data;
+        this.gldata = data;
         this.window = window;        
     }
 
@@ -166,7 +170,7 @@ public class GLXContext implements GLContext {
         }
     }
     
-    private GLFBConfig chooseGLXFBConfig(GLFBConfig desired) throws AWTException {
+    private GLFBDescriptor chooseGLXFBConfig(GLFBDescriptor desired) throws AWTException {
         // HACK: This is a (hopefully temporary) workaround for Chromium
         //       (VirtualBox GL) not setting the window bit on any GLXFBConfigs
         boolean trustWindowBit = true;
@@ -179,12 +183,12 @@ public class GLXContext implements GLContext {
             throw new AWTException("GLX: No GLXFBConfigs returned");
         }
         
-        List<GLFBConfig> usableConfigs = new ArrayList<>();
+        List<GLFBDescriptor> usableConfigs = new ArrayList<>();
         int usableCount = 0;
         
         for (int i = 0; i < nativeConfigs.remaining(); i++) {
             long /*GLXFBConfig*/ config = nativeConfigs.get(i);
-            GLFBConfig data = new GLFBConfig();
+            GLFBDescriptorBuilder data = GLFBDescriptor.builder();
             
             // Only consider RGBA GLXFBConfigs
             if (!((getGLXFBConfigAttrib(config, GLX_RENDER_TYPE) & GLX_RGBA_BIT) > 0))
@@ -197,37 +201,38 @@ public class GLXContext implements GLContext {
                     continue;
             }
 
-            if ((getGLXFBConfigAttrib(config, GLX_DOUBLEBUFFER) > 0) != desired.doublebuffer)
+            if ((getGLXFBConfigAttrib(config, GLX_DOUBLEBUFFER) > 0) != desired.doublebuffer())
                 continue;
             
-            data.redBits    = getGLXFBConfigAttrib(config, GLX_RED_SIZE);
-            data.greenBits  = getGLXFBConfigAttrib(config, GLX_GREEN_SIZE);
-            data.blueBits   = getGLXFBConfigAttrib(config, GLX_BLUE_SIZE);
+            data.redBits(getGLXFBConfigAttrib(config, GLX_RED_SIZE));
+            data.greenBits(getGLXFBConfigAttrib(config, GLX_GREEN_SIZE));
+            data.blueBits(getGLXFBConfigAttrib(config, GLX_BLUE_SIZE));
 
-            data.alphaBits   = getGLXFBConfigAttrib(config, GLX_ALPHA_SIZE);
-            data.depthBits   = getGLXFBConfigAttrib(config, GLX_DEPTH_SIZE);
-            data.stencilBits = getGLXFBConfigAttrib(config, GLX_STENCIL_SIZE);
+            data.alphaBits(getGLXFBConfigAttrib(config, GLX_ALPHA_SIZE));
+            data.depthBits(getGLXFBConfigAttrib(config, GLX_DEPTH_SIZE));
+            data.stencilBits(getGLXFBConfigAttrib(config, GLX_STENCIL_SIZE));
 
-            data.accumRedBits   = getGLXFBConfigAttrib(config, GLX_ACCUM_RED_SIZE);
-            data.accumGreenBits = getGLXFBConfigAttrib(config, GLX_ACCUM_GREEN_SIZE);
-            data.accumBlueBits  = getGLXFBConfigAttrib(config, GLX_ACCUM_BLUE_SIZE);
-            data.accumAlphaBits = getGLXFBConfigAttrib(config, GLX_ACCUM_ALPHA_SIZE);
+            data.accumRedBits(getGLXFBConfigAttrib(config, GLX_ACCUM_RED_SIZE));
+            data.accumGreenBits(getGLXFBConfigAttrib(config, GLX_ACCUM_GREEN_SIZE));
+            data.accumBlueBits(getGLXFBConfigAttrib(config, GLX_ACCUM_BLUE_SIZE));
+            data.accumAlphaBits(getGLXFBConfigAttrib(config, GLX_ACCUM_ALPHA_SIZE));
 
-            data.auxBuffers = getGLXFBConfigAttrib(config, GLX_AUX_BUFFERS);
-            data.stereo     = getGLXFBConfigAttrib(config, GLX_STEREO) > 0;
+            data.auxBuffers(getGLXFBConfigAttrib(config, GLX_AUX_BUFFERS));
+            data.stereo(getGLXFBConfigAttrib(config, GLX_STEREO) > 0);
             
             if (glx.ARB_multisample)
-                data.samples = getGLXFBConfigAttrib(config, GLX_SAMPLES);
+                data.samples(getGLXFBConfigAttrib(config, GLX_SAMPLES));
             
             if (glx.ARB_framebuffer_sRGB || glx.EXT_framebuffer_sRGB)
-                data.sRGB = getGLXFBConfigAttrib(config, GLX_FRAMEBUFFER_SRGB_CAPABLE_ARB) > 0;
+                data.sRGB(getGLXFBConfigAttrib(config, GLX_FRAMEBUFFER_SRGB_CAPABLE_ARB) > 0);
             
-            data.handle = config;
+            GLFBDescriptor descriptor = data.build();
+            descriptor.handle(config);
             usableCount++;
-            usableConfigs.add(data);
+            usableConfigs.add(descriptor);
         }
         
-        GLFBConfig result = glGetChooseFBConfig(desired, usableConfigs, usableCount);
+        GLFBDescriptor result = glGetChooseFBConfig(desired, usableConfigs, usableCount);
         XFree(nativeConfigs);
         return result;
     }
@@ -246,22 +251,22 @@ public class GLXContext implements GLContext {
     
     @Override
     public void create() throws AWTException {        
-        GLPlatformConfig ctxconfig = data.getPlatformConfig();
-        GLFBConfig fbconfig = data.getFBConfig();
+        GLCXTDescriptor ctxconfig = gldata.getCXTConfig();
+        GLFBDescriptor fbconfig   = gldata.getFBConfig();
         
         IntBuffer attribs = BufferUtils.createIntBuffer(40);
         long share = NULL;
         
-        if (ctxconfig.share != NULL) {
-            share = ctxconfig.share;
+        if (ctxconfig.share() != NULL) {
+            share = ctxconfig.share();
         }
         
-        GLFBConfig _native = chooseGLXFBConfig(fbconfig);
+        GLFBDescriptor _native = chooseGLXFBConfig(fbconfig);
         if (_native == null) {
             throw new AWTException("GLX: Failed to find a suitable GLXFBConfig");
         }
         
-        if (ctxconfig.client == AWT_OPENGL_ES_API)
+        if (ctxconfig.client() == OPENGL_ES)
         {
             if (!glx.ARB_create_context ||
                 !glx.ARB_create_context_profile ||
@@ -270,14 +275,14 @@ public class GLXContext implements GLContext {
                 throw new AWTException("GLX: OpenGL ES requested but GLX_EXT_create_context_es2_profile is unavailable");
             }
         }        
-        if (ctxconfig.forward)
+        if (ctxconfig.forward())
         {
             if (!glx.ARB_create_context)
             {
                 throw new AWTException("GLX: Forward compatibility requested but GLX_ARB_create_context_profile is unavailable");
             }
         }        
-        if (BOOL(ctxconfig.profile))
+        if (BOOL(ctxconfig.profile()))
         {
             if (!glx.ARB_create_context ||
                 !glx.ARB_create_context_profile)
@@ -290,32 +295,32 @@ public class GLXContext implements GLContext {
         {
             int mask = 0, flags = 0;
 
-            if (ctxconfig.client == AWT_OPENGL_API)
+            if (ctxconfig.client() == OPENGL)
             {
-                if (ctxconfig.forward)
+                if (ctxconfig.forward())
                     flags |= GLX_CONTEXT_FORWARD_COMPATIBLE_BIT_ARB;
 
-                if (ctxconfig.profile == AWT_OPENGL_CORE_PROFILE)
+                if (ctxconfig.profile() == CORE_PROFILE)
                     mask |= GLX_CONTEXT_CORE_PROFILE_BIT_ARB;
-                else if (ctxconfig.profile == AWT_OPENGL_COMPAT_PROFILE)
+                else if (ctxconfig.profile() == COMPATIBILITY_PROFILE)
                     mask |= GLX_CONTEXT_COMPATIBILITY_PROFILE_BIT_ARB;
             }
             else
                 mask |= GLX_CONTEXT_ES2_PROFILE_BIT_EXT;
             
-            if (ctxconfig.debug)
+            if (ctxconfig.debug())
                 flags |= GLX_CONTEXT_DEBUG_BIT_ARB;
             
-            if (BOOL(ctxconfig.robustness))
+            if (BOOL(ctxconfig.robustness()))
             {
                 if (glx.ARB_create_context_robustness)
                 {
-                    if (ctxconfig.robustness == AWT_NO_RESET_NOTIFICATION)
+                    if (ctxconfig.robustness() == NO_RESET_NOTIFICATION)
                     {
                         attribs.put(GLX_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB)
                                .put(GLX_NO_RESET_NOTIFICATION_ARB);
                     }
-                    else if (ctxconfig.robustness == AWT_LOSE_CONTEXT_ON_RESET)
+                    else if (ctxconfig.robustness() == LOSE_CONTEXT_ON_RESET)
                     {
                         attribs.put(GLX_CONTEXT_RESET_NOTIFICATION_STRATEGY_ARB)
                                .put(GLX_LOSE_CONTEXT_ON_RESET_ARB);
@@ -325,16 +330,16 @@ public class GLXContext implements GLContext {
                 }
             }
             
-            if (BOOL(ctxconfig.release))
+            if (BOOL(ctxconfig.release()))
             {
                 if (glx.ARB_context_flush_control)
                 {
-                    if (ctxconfig.release == AWT_RELEASE_BEHAVIOR_NONE)
+                    if (ctxconfig.release() == NONE)
                     {
                         attribs.put(GLX_CONTEXT_RELEASE_BEHAVIOR_ARB)
                                .put(GLX_CONTEXT_RELEASE_BEHAVIOR_NONE_ARB);
                     }
-                    else if (ctxconfig.release == AWT_RELEASE_BEHAVIOR_FLUSH)
+                    else if (ctxconfig.release() == FLUSH)
                     {
                         attribs.put(GLX_CONTEXT_RELEASE_BEHAVIOR_ARB)
                                .put(GLX_CONTEXT_RELEASE_BEHAVIOR_FLUSH_ARB);
@@ -342,7 +347,7 @@ public class GLXContext implements GLContext {
                 }
             }
             
-            if (ctxconfig.noerror)
+            if (ctxconfig.noerror())
             {
                 if (glx.ARB_create_context_no_error)
                     attribs.put(GLX_CONTEXT_OPENGL_NO_ERROR_ARB).put(True);
@@ -351,10 +356,10 @@ public class GLXContext implements GLContext {
             // NOTE: Only request an explicitly versioned context when necessary, as
             //       explicitly requesting version 1.0 does not always return the
             //       highest version supported by the driver
-            if (ctxconfig.major != 1 || ctxconfig.minor != 0)
+            if (ctxconfig.major() != 1 || ctxconfig.minor() != 0)
             {
-                attribs.put(GLX_CONTEXT_MAJOR_VERSION_ARB).put(ctxconfig.major);
-                attribs.put(GLX_CONTEXT_MINOR_VERSION_ARB).put(ctxconfig.minor);
+                attribs.put(GLX_CONTEXT_MAJOR_VERSION_ARB).put(ctxconfig.major());
+                attribs.put(GLX_CONTEXT_MINOR_VERSION_ARB).put(ctxconfig.minor());
             }
             
             if (BOOL(mask))
@@ -366,7 +371,7 @@ public class GLXContext implements GLContext {
             attribs.put(None).put(None);
             
             context = glXCreateContextAttribsARB(window.getDisplay(), 
-                    _native.handle, 
+                    _native.handle(),
                     share, 
                     true, 
                     attribs);
@@ -377,17 +382,17 @@ public class GLXContext implements GLContext {
             //       violation of the extension spec
             if (context == NULL)
             {
-                if (ctxconfig.client == AWT_OPENGL_API &&
-                    ctxconfig.profile == AWT_OPENGL_ANY_PROFILE &&
-                    ctxconfig.forward == false)
+                if (ctxconfig.client() == OPENGL &&
+                    ctxconfig.profile() == ANY_PROFILE &&
+                    ctxconfig.forward() == false)
                 {
-                    context = createLegacyContextGLX(_native.handle, share);
+                    context = createLegacyContextGLX(_native.handle(), share);
                 }
             }
         }
         else
         {
-            context = createLegacyContextGLX(_native.handle, share);
+            context = createLegacyContextGLX(_native.handle(), share);
         }
         
         if (context == NULL) {
