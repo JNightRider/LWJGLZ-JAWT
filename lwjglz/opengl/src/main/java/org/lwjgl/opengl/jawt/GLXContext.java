@@ -118,47 +118,36 @@ public class GLXContext implements GLContext {
         }
             
         if (extensionSupported("GLX_EXT_swap_control")) {
-            if (XFunctions.SwapIntervalEXT != NULL)
-                glx.EXT_swap_control = true;
+            glx.EXT_swap_control = BOOL(XFunctions.SwapIntervalEXT);
         }
         if (extensionSupported("GLX_SGI_swap_control")) {
-            if (XFunctions.SwapIntervalSGI != NULL)
-                glx.SGI_swap_control = true;
+            glx.SGI_swap_control = BOOL(XFunctions.SwapIntervalSGI);
         }
         if (extensionSupported("GLX_MESA_swap_control")) {
-            if (XFunctions.SwapIntervalMESA != NULL)
-                glx.MESA_swap_control = true;
+            glx.MESA_swap_control = BOOL(XFunctions.SwapIntervalMESA);
         }
 
-        if (extensionSupported("GLX_ARB_multisample"))
-            glx.ARB_multisample = true;
+        glx.ARB_multisample =
+                extensionSupported("GLX_ARB_multisample");
+        glx.ARB_framebuffer_sRGB =
+                extensionSupported("GLX_ARB_framebuffer_sRGB");
+        glx.EXT_framebuffer_sRGB =
+                extensionSupported("GLX_EXT_framebuffer_sRGB");
 
-        if (extensionSupported("GLX_ARB_framebuffer_sRGB"))
-            glx.ARB_framebuffer_sRGB = true;
-
-        if (extensionSupported("GLX_EXT_framebuffer_sRGB"))
-            glx.EXT_framebuffer_sRGB = true;
-
-        if (extensionSupported("GLX_ARB_create_context"))
-        {
-            if (XFunctions.CreateContextAttribsARB != NULL)
-                glx.ARB_create_context = true;
+        if (extensionSupported("GLX_ARB_create_context")) {
+            glx.ARB_create_context = BOOL(XFunctions.CreateContextAttribsARB);
         }
 
-        if (extensionSupported("GLX_ARB_create_context_robustness"))
-            glx.ARB_create_context_robustness = true;
-
-        if (extensionSupported("GLX_ARB_create_context_profile"))
-            glx.ARB_create_context_profile = true;
-
-        if (extensionSupported("GLX_EXT_create_context_es2_profile"))
-            glx.EXT_create_context_es2_profile = true;
-
-        if (extensionSupported("GLX_ARB_create_context_no_error"))
-            glx.ARB_create_context_no_error = true;
-
-        if (extensionSupported("GLX_ARB_context_flush_control"))
-            glx.ARB_context_flush_control = true;
+        glx.ARB_create_context_robustness =
+                extensionSupported("GLX_ARB_create_context_robustness");
+        glx.ARB_create_context_profile =
+                extensionSupported("GLX_ARB_create_context_profile");
+        glx.EXT_create_context_es2_profile =
+                extensionSupported("GLX_EXT_create_context_es2_profile");
+        glx.ARB_create_context_no_error =
+                extensionSupported("GLX_ARB_create_context_no_error");
+        glx.ARB_context_flush_control =
+                extensionSupported("GLX_ARB_context_flush_control");
         
     }
     
@@ -266,27 +255,21 @@ public class GLXContext implements GLContext {
             throw new AWTException("GLX: Failed to find a suitable GLXFBConfig");
         }
         
-        if (ctxconfig.client() == OPENGL_ES)
-        {
+        if (ctxconfig.client() == OPENGL_ES) {
             if (!glx.ARB_create_context ||
                 !glx.ARB_create_context_profile ||
-                !glx.EXT_create_context_es2_profile)
-            {
+                !glx.EXT_create_context_es2_profile) {
                 throw new AWTException("GLX: OpenGL ES requested but GLX_EXT_create_context_es2_profile is unavailable");
             }
         }        
-        if (ctxconfig.forward())
-        {
-            if (!glx.ARB_create_context)
-            {
+        if (ctxconfig.forward()) {
+            if (!glx.ARB_create_context) {
                 throw new AWTException("GLX: Forward compatibility requested but GLX_ARB_create_context_profile is unavailable");
             }
         }        
-        if (BOOL(ctxconfig.profile()))
-        {
+        if (BOOL(ctxconfig.profile())) {
             if (!glx.ARB_create_context ||
-                !glx.ARB_create_context_profile)
-            {
+                !glx.ARB_create_context_profile) {
                 throw new AWTException( "GLX: An OpenGL profile requested but GLX_ARB_create_context_profile is unavailable");
             }
         }

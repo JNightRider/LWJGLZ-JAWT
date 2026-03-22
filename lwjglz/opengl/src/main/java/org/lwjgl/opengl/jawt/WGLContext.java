@@ -104,8 +104,7 @@ public class WGLContext implements GLContext {
     private int findPixelFormatAttribValueWGL(IntBuffer attribs, IntBuffer values, int attrib) throws AWTException
     {
         int attribCount = attribs.remaining();
-        for (int i = 0;  i < attribCount;  i++)
-        {
+        for (int i = 0;  i < attribCount;  i++) {
             if (attribs.get(i) == attrib)
                 return values.get(i);
         }
@@ -152,13 +151,10 @@ public class WGLContext implements GLContext {
             if (wgl.ARB_multisample) 
                 attribs.put(WGL_SAMPLES_ARB);
             
-            if (ctxconfig.client() == OPENGL)
-            {
+            if (ctxconfig.client() == OPENGL) {
                 if (wgl.ARB_framebuffer_sRGB || wgl.EXT_framebuffer_sRGB)
                     attribs.put(WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB);
-            }
-            else
-            {
+            } else {
                 if (wgl.EXT_colorspace)
                     attribs.put(WGL_COLORSPACE_EXT);
             }
@@ -194,10 +190,8 @@ public class WGLContext implements GLContext {
             GLFBDescriptorBuilder data = GLFBDescriptor.builder();
             pixelFormat = i + 1;
 
-            if (wgl.ARB_pixel_format)
-            {
+            if (wgl.ARB_pixel_format) {
                 // Get pixel format attributes through "modern" extension
-
                 if (!wglGetPixelFormatAttribivARB(dc,
                         pixelFormat, 0,
                         attribs, values)) {
@@ -237,15 +231,11 @@ public class WGLContext implements GLContext {
                 if (wgl.ARB_multisample)
                     data.samples(findPixelFormatAttribValueWGL(attribs, values, WGL_SAMPLES_ARB));
 
-                if (ctxconfig.client() == OPENGL)
-                {
+                if (ctxconfig.client() == OPENGL) {
                     if (wgl.ARB_framebuffer_sRGB || wgl.EXT_framebuffer_sRGB)
                         data.sRGB(findBoolPixelFormatAttribValueWGL(attribs, values, WGL_FRAMEBUFFER_SRGB_CAPABLE_ARB));
-                }
-                else
-                {
-                    if (wgl.EXT_colorspace)
-                    {
+                } else {
+                    if (wgl.EXT_colorspace) {
                         if (findPixelFormatAttribValueWGL(attribs, values, WGL_COLORSPACE_EXT) == WGL_COLORSPACE_SRGB_EXT)
                             data.sRGB(true);
                     }
@@ -258,20 +248,17 @@ public class WGLContext implements GLContext {
                     PIXELFORMATDESCRIPTOR pfd = PIXELFORMATDESCRIPTOR.calloc(stack);
                     if (!BOOL(DescribePixelFormat(null, dc,
                                              pixelFormat,
-                                             pfd)))
-                    {
+                                             pfd))) {
                         throw new AWTException("WGL: Failed to describe pixel format");
                     }
 
                     if (!BOOL(pfd.dwFlags() & PFD_DRAW_TO_WINDOW) ||
-                        !BOOL(pfd.dwFlags() & PFD_SUPPORT_OPENGL))
-                    {
+                        !BOOL(pfd.dwFlags() & PFD_SUPPORT_OPENGL)) {
                         continue;
                     }
 
                     if (!BOOL(pfd.dwFlags() & PFD_GENERIC_ACCELERATED) &&
-                        BOOL(pfd.dwFlags() & PFD_GENERIC_FORMAT))
-                    {
+                        BOOL(pfd.dwFlags() & PFD_GENERIC_FORMAT)) {
                         continue;
                     }
 
@@ -306,8 +293,7 @@ public class WGLContext implements GLContext {
             usableCount++;
         }
         
-        if (!BOOL(usableCount))
-        {
+        if (!BOOL(usableCount)) {
             throw new AWTException("WGL: The driver does not appear to support OpenGL");
         }
         
@@ -437,8 +423,7 @@ public class WGLContext implements GLContext {
             share = ctxconfig.share();
         
         dc = GetDC(window.getHWND());
-        if (dc == NULL)
-        {
+        if (dc == NULL) {
             throw new AWTException("WGL: Failed to retrieve DC for window");
         }
         

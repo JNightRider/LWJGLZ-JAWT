@@ -118,8 +118,7 @@ public class EGLContext implements GLContext {
         int apiBit, surfaceTypeBit;
         boolean wrongApiAvailable = false;
         
-        if (ctxconfig.client() == OPENGL_ES)
-        {
+        if (ctxconfig.client() == OPENGL_ES) {
             if (ctxconfig.major() == 1)
                 apiBit = EGL_OPENGL_ES_BIT;
             else
@@ -135,8 +134,7 @@ public class EGLContext implements GLContext {
         //else
         //    surfaceTypeBit = EGL_WINDOW_BIT;
         
-        if (fbconfig.stereo())
-        {
+        if (fbconfig.stereo()) {
             throw new AWTException("EGL: Stereo rendering not supported");
         }
         
@@ -152,8 +150,7 @@ public class EGLContext implements GLContext {
         int usableCount = 0;
         List<GLFBDescriptor> usableConfigs = new ArrayList<>();
         
-        for (int i = 0;  i < nativeCount.get(0);  i++)
-        {
+        for (int i = 0;  i < nativeCount.get(0);  i++) {
             long/*EGLConfig*/ config = nativeConfigs.get(i);
             GLFBDescriptorBuilder data = GLFBDescriptor.builder();
             
@@ -164,8 +161,7 @@ public class EGLContext implements GLContext {
             if (!BOOL((getEGLConfigAttrib(config, EGL_SURFACE_TYPE) & surfaceTypeBit)))
                 continue;
             
-            if (!BOOL((getEGLConfigAttrib(config, EGL_RENDERABLE_TYPE) & apiBit)))
-            {
+            if (!BOOL((getEGLConfigAttrib(config, EGL_RENDERABLE_TYPE) & apiBit))) {
                 wrongApiAvailable = true;
                 continue;
             }
@@ -202,23 +198,17 @@ public class EGLContext implements GLContext {
         
         GLFBDescriptor result = glGetChooseFBConfig(fbconfig, usableConfigs, usableCount);
         if (result == null) {
-            if (wrongApiAvailable)
-            {
-                if (ctxconfig.client() == OPENGL_ES)
-                {
+            if (wrongApiAvailable) {
+                if (ctxconfig.client() == OPENGL_ES) {
                     if (ctxconfig.major() == 1) {
                         throw new AWTException("EGL: Failed to find support for OpenGL ES 1.x");
                     } else {
                         throw new AWTException("EGL: Failed to find support for OpenGL ES 2 or later");
                     }
-                }
-                else 
-                {
+                } else {
                     throw new AWTException("EGL: Failed to find support for OpenGL");
                 }
-            } 
-            else 
-            {
+            } else {
                 throw new AWTException("EGL: Failed to find a suitable EGLConfig");
             }
         }
@@ -312,16 +302,14 @@ public class EGLContext implements GLContext {
         
         if (ctxconfig.client() == OPENGL_ES)
         {
-            if (!eglBindAPI(EGL_OPENGL_ES_API))
-            {
+            if (!eglBindAPI(EGL_OPENGL_ES_API)) {
                 throw new IllegalStateException("EGL: Failed to bind OpenGL ES: %s"
                         .formatted(getEGLErrorString(eglGetError())));
             }
         }
          else
         {
-            if (!eglBindAPI(EGL_OPENGL_API))
-            {
+            if (!eglBindAPI(EGL_OPENGL_API)) {
                 throw new IllegalStateException("EGL: Failed to bind OpenGL: %s"
                         .formatted(getEGLErrorString(eglGetError())));
             }
@@ -438,8 +426,7 @@ public class EGLContext implements GLContext {
         //       despite stating that it supports EGL_EXT_platform_base.
         surface = eglCreateWindowSurface(display, config.handle(), _native, attribs);
 
-        if (surface == EGL_NO_SURFACE)
-        {
+        if (surface == EGL_NO_SURFACE) {
             throw new IllegalStateException("EGL: Failed to create window surface: %s"
                         .formatted(getEGLErrorString(eglGetError())));
         }
